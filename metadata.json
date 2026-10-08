@@ -1,0 +1,6 @@
+{
+  "name": "Farm Intelligence Platform",
+  "description": "AI-powered Farm Intelligence Platform prototype supporting the complete crop lifecycle: Record, Understand, Analyze, Decide, Anticipate.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
