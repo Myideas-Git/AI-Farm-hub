@@ -11,18 +11,18 @@ interface EmptyStateProps {
 
 export const EmptyState: React.FC<EmptyStateProps> = ({
   title = 'Your farm memory starts here',
-  description = 'Add your first plot or crop cycle to begin capturing your field journey.',
+  description = 'No field activities recorded yet. Log your first event to build your farm record history.',
   actionLabel = 'Record First Activity',
   onAction,
   icon,
 }) => {
   return (
     <div className="py-12 px-6 text-center max-w-md mx-auto">
-      <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center border border-emerald-100">
+      <div className="w-14 h-14 mx-auto mb-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 flex items-center justify-center border border-emerald-100 dark:border-emerald-800">
         {icon || <Sprout className="w-7 h-7 stroke-[1.75]" />}
       </div>
-      <h3 className="text-lg font-semibold text-slate-900 mb-1.5">{title}</h3>
-      <p className="text-sm text-slate-500 leading-relaxed mb-6">{description}</p>
+      <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-1.5">{title}</h3>
+      <p className="text-sm text-slate-500 dark:text-slate-400 leading-relaxed mb-6">{description}</p>
       {onAction && (
         <button
           type="button"

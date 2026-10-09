@@ -1,52 +1,57 @@
 import React, { useState } from 'react';
 import { Wifi, WifiOff, RefreshCw, CheckCircle2 } from 'lucide-react';
 import { SyncState } from '../../types/farm';
+import { AppLanguage } from '../../types/profile';
+import { getTranslations } from '../../i18n/translations';
 
 interface OfflineStatusIndicatorProps {
   currentSyncState: SyncState;
   pendingCount?: number;
   onStateChange?: (state: SyncState) => void;
+  language?: AppLanguage;
 }
 
 export const OfflineStatusIndicator: React.FC<OfflineStatusIndicatorProps> = ({
   currentSyncState,
   pendingCount = 1,
   onStateChange,
+  language = 'Telugu',
 }) => {
   const [isOpen, setIsOpen] = useState(false);
+  const t = getTranslations(language);
 
   const getStatusDisplay = () => {
     switch (currentSyncState) {
       case 'online':
         return {
           icon: Wifi,
-          label: 'Online',
-          detail: 'Cloud synced',
-          color: 'text-emerald-700 bg-emerald-50 border-emerald-200',
+          label: t.sync.onlineLabel,
+          detail: t.sync.onlineDetail,
+          color: 'text-emerald-700 bg-emerald-50 border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300',
           dot: 'bg-emerald-600',
         };
       case 'offline':
         return {
           icon: WifiOff,
-          label: 'Offline Mode',
-          detail: 'Local memory active',
-          color: 'text-amber-800 bg-amber-50 border-amber-200',
+          label: t.sync.offlineLabel,
+          detail: t.sync.offlineDetail,
+          color: 'text-amber-800 bg-amber-50 border-amber-200 dark:bg-amber-950/40 dark:border-amber-800 dark:text-amber-300',
           dot: 'bg-amber-600',
         };
       case 'pending_sync':
         return {
           icon: RefreshCw,
-          label: 'Pending Sync',
-          detail: `${pendingCount} record queued`,
-          color: 'text-sky-800 bg-sky-50 border-sky-200',
+          label: t.sync.pendingSyncLabel,
+          detail: `${pendingCount} ${t.sync.pendingSyncDetail}`,
+          color: 'text-sky-800 bg-sky-50 border-sky-200 dark:bg-sky-950/40 dark:border-sky-800 dark:text-sky-300',
           dot: 'bg-sky-600 animate-pulse',
         };
       case 'sync_completed':
         return {
           icon: CheckCircle2,
-          label: 'Sync Completed',
-          detail: 'All records backed up',
-          color: 'text-emerald-800 bg-emerald-50 border-emerald-200',
+          label: t.sync.syncCompletedLabel,
+          detail: t.sync.syncCompletedDetail,
+          color: 'text-emerald-800 bg-emerald-50 border-emerald-200 dark:bg-emerald-950/40 dark:border-emerald-800 dark:text-emerald-300',
           dot: 'bg-emerald-600',
         };
     }
@@ -61,7 +66,7 @@ export const OfflineStatusIndicator: React.FC<OfflineStatusIndicatorProps> = ({
         type="button"
         onClick={() => setIsOpen(!isOpen)}
         className={`flex items-center gap-2 px-2.5 py-1.5 text-xs font-medium rounded-md border transition-colors ${current.color} hover:shadow-xs min-h-[36px]`}
-        title="Simulate offline / online sync states (Phase 0 Prototype)"
+        title={t.sync.modalTitle}
         aria-expanded={isOpen}
       >
         <span className={`w-2 h-2 rounded-full shrink-0 ${current.dot}`} />
@@ -76,21 +81,23 @@ export const OfflineStatusIndicator: React.FC<OfflineStatusIndicatorProps> = ({
             onClick={() => setIsOpen(false)}
             aria-hidden="true"
           />
-          <div className="absolute right-0 mt-1.5 w-72 p-3 bg-white border border-slate-200 rounded-lg shadow-lg z-50 text-xs text-slate-700">
-            <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100">
-              <span className="font-semibold text-slate-900">Network Sync State</span>
-              <span className="text-[10px] text-slate-400 font-mono">PHASE 0 SIMULATION</span>
+          <div className="absolute right-0 mt-1.5 w-72 p-3.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-lg z-50 text-xs text-slate-700 dark:text-slate-300 animate-fade-in">
+            <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-100 dark:border-slate-800">
+              <span className="font-semibold text-slate-900 dark:text-slate-100">{t.sync.modalTitle}</span>
+              <span className="text-[10px] text-amber-700 dark:text-amber-400 font-mono font-bold bg-amber-50 dark:bg-amber-950 px-1 py-0.5 rounded border border-amber-200 dark:border-amber-800">
+                {t.sync.simulationBadge}
+              </span>
             </div>
-            <p className="text-slate-500 mb-2.5 leading-relaxed text-[11px]">
-              The platform is designed to operate seamlessly in fields with zero connectivity. Switch states to inspect offline behavior:
+            <p className="text-slate-500 dark:text-slate-400 mb-3 leading-relaxed text-[11px]">
+              {t.sync.simulationNote}
             </p>
             <div className="space-y-1">
               {(
                 [
-                  { state: 'online', label: 'Online (Connected)' },
-                  { state: 'offline', label: 'Offline (Field Memory Active)' },
-                  { state: 'pending_sync', label: 'Pending Sync (Queued locally)' },
-                  { state: 'sync_completed', label: 'Sync Completed (Synced)' },
+                  { state: 'online', label: `${t.sync.onlineLabel} (${t.sync.onlineDetail})` },
+                  { state: 'offline', label: `${t.sync.offlineLabel} (${t.sync.offlineDetail})` },
+                  { state: 'pending_sync', label: `${t.sync.pendingSyncLabel} (${t.sync.pendingSyncDetail})` },
+                  { state: 'sync_completed', label: `${t.sync.syncCompletedLabel} (${t.sync.syncCompletedDetail})` },
                 ] as const
               ).map((item) => (
                 <button
@@ -102,13 +109,13 @@ export const OfflineStatusIndicator: React.FC<OfflineStatusIndicatorProps> = ({
                   }}
                   className={`w-full text-left px-2.5 py-1.5 rounded transition-colors text-xs flex items-center justify-between min-h-[32px] ${
                     currentSyncState === item.state
-                      ? 'bg-slate-100 font-semibold text-slate-900'
-                      : 'hover:bg-slate-50 text-slate-600'
+                      ? 'bg-slate-100 dark:bg-slate-800 font-semibold text-slate-900 dark:text-slate-100'
+                      : 'hover:bg-slate-50 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400'
                   }`}
                 >
-                  <span>{item.label}</span>
+                  <span className="truncate">{item.label}</span>
                   {currentSyncState === item.state && (
-                    <span className="text-emerald-700 text-[11px]">Active</span>
+                    <span className="text-emerald-700 dark:text-emerald-400 text-[11px] font-bold shrink-0 ml-1">✓</span>
                   )}
                 </button>
               ))}

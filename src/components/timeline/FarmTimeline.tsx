@@ -21,7 +21,9 @@ import {
   History,
 } from 'lucide-react';
 import { FarmEvent, FarmEventType, Plot } from '../../types/farm';
+import { AppLanguage } from '../../types/profile';
 import { TrustIndicator } from '../common/TrustIndicator';
+import { getTranslations } from '../../i18n/translations';
 
 interface FarmTimelineProps {
   events: FarmEvent[];
@@ -31,6 +33,7 @@ interface FarmTimelineProps {
   onConfirmEvent?: (eventId: string) => void;
   onDeleteEvent?: (eventId: string) => void;
   onEditEvent?: (event: FarmEvent) => void;
+  language?: AppLanguage;
 }
 
 export const FarmTimeline: React.FC<FarmTimelineProps> = ({
@@ -40,7 +43,9 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
   onConfirmEvent,
   onDeleteEvent,
   onEditEvent,
+  language = 'Telugu',
 }) => {
+  const t = getTranslations(language);
   const [selectedPlotId, setSelectedPlotId] = useState<string>('all');
   const [selectedEventType, setSelectedEventType] = useState<string>('all');
   const [selectedFilterCategory, setSelectedFilterCategory] = useState<'all' | 'farmer' | 'demo'>('all');
@@ -340,7 +345,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
 
                 {/* Footer metadata & Trust indicator */}
                 <div className="mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2 text-xs">
-                  <TrustIndicator status={evt.status} source={evt.source} />
+                  <TrustIndicator status={evt.status} source={evt.source} language={language} />
 
                   <div className="flex items-center gap-2">
                     <button

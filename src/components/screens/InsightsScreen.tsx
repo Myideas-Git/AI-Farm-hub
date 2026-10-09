@@ -86,7 +86,7 @@ export const InsightsScreen: React.FC<InsightsScreenProps> = ({
             </div>
           </div>
 
-          <TrustIndicator status="demo" />
+          <TrustIndicator status="demo" language={preferences?.appLanguage || 'Telugu'} />
         </div>
 
         {/* Narrative Analysis */}

@@ -6,16 +6,17 @@ import {
   AlertTriangle,
   Sparkles,
   FileText,
-  UserCheck,
-  FileCheck2,
 } from 'lucide-react';
 import { EventSource, RecordStatus, TrustStatus } from '../../types/farm';
+import { AppLanguage } from '../../types/profile';
+import { getTranslations } from '../../i18n/translations';
 
 interface TrustIndicatorProps {
   status?: RecordStatus | TrustStatus;
   source?: EventSource;
   size?: 'sm' | 'md';
   showDetails?: boolean;
+  language?: AppLanguage;
 }
 
 export const TrustIndicator: React.FC<TrustIndicatorProps> = ({
@@ -23,96 +24,85 @@ export const TrustIndicator: React.FC<TrustIndicatorProps> = ({
   source,
   size = 'sm',
   showDetails = false,
+  language = 'Telugu',
 }) => {
+  const t = getTranslations(language);
+
   const getStatusConfig = () => {
     switch (status) {
       case 'farmer_confirmed':
       case 'confirmed':
         return {
           icon: CheckCircle2,
-          label: 'Farmer Confirmed',
+          label: t.trustIndicators.farmerConfirmed,
           textColor: 'text-emerald-700 dark:text-emerald-400',
           dotColor: 'bg-emerald-600',
-          description: 'Explicitly verified and confirmed by farmer',
+          description: t.statuses.farmer_confirmed,
         };
       case 'pending_confirmation':
       case 'pending':
         return {
           icon: Clock,
-          label: 'Pending Farmer Confirmation',
+          label: t.trustIndicators.pendingConfirmation,
           textColor: 'text-amber-800 dark:text-amber-300',
           dotColor: 'bg-amber-500',
-          description: 'AI extracted or draft; awaiting farmer confirmation',
+          description: t.statuses.pending_confirmation,
         };
       case 'draft':
         return {
           icon: FileText,
-          label: 'Draft',
+          label: t.trustIndicators.draft,
           textColor: 'text-slate-600 dark:text-slate-400',
           dotColor: 'bg-slate-400',
-          description: 'Unsaved or work-in-progress entry',
+          description: t.statuses.draft,
         };
       case 'conflicting':
         return {
           icon: AlertTriangle,
-          label: 'Conflicting Information',
+          label: t.trustIndicators.conflicting,
           textColor: 'text-rose-700 dark:text-rose-400',
           dotColor: 'bg-rose-500',
-          description: 'Discrepancy detected with previous farm entries',
+          description: t.statuses.conflicting,
         };
       case 'demo':
         return {
           icon: Sparkles,
-          label: 'Demo Record',
+          label: t.trustIndicators.demoRecord,
           textColor: 'text-sky-800 dark:text-sky-300',
           dotColor: 'bg-sky-500',
-          description: 'Sample data for testing; not an actual farm activity',
+          description: t.statuses.demo,
         };
       case 'demo_incomplete':
         return {
           icon: Sparkles,
-          label: 'Demo — Incomplete Information',
+          label: t.trustIndicators.demoIncomplete,
           textColor: 'text-indigo-800 dark:text-indigo-300',
           dotColor: 'bg-indigo-400',
-          description: 'Sample record with missing plot or quantity',
+          description: t.statuses.demo_incomplete,
         };
       case 'estimated':
         return {
           icon: Sparkles,
-          label: 'Estimated',
+          label: t.trustIndicators.estimated,
           textColor: 'text-amber-700 dark:text-amber-400',
           dotColor: 'bg-amber-500',
-          description: 'Calculated approximation',
+          description: t.statuses.estimated,
         };
       case 'unknown':
       default:
         return {
           icon: HelpCircle,
-          label: 'Unknown / Not Recorded',
+          label: t.trustIndicators.unknown,
           textColor: 'text-slate-600 dark:text-slate-400',
           dotColor: 'bg-slate-400',
-          description: 'Information not recorded. Preserved without assumption.',
+          description: t.statuses.unknown,
         };
     }
   };
 
   const getSourceLabel = (src?: EventSource) => {
     if (!src) return null;
-    switch (src) {
-      case 'farmer_reported':
-        return 'Farmer reported';
-      case 'ai_extracted':
-        return 'AI extracted';
-      case 'farmer_confirmed':
-        return 'Farmer confirmed';
-      case 'verified_document':
-        return 'Verified document';
-      case 'demo_data':
-        return 'Demo data';
-      case 'unknown':
-      default:
-        return null;
-    }
+    return t.sources[src] || null;
   };
 
   const config = getStatusConfig();
@@ -134,7 +124,9 @@ export const TrustIndicator: React.FC<TrustIndicatorProps> = ({
       <span>{config.label}</span>
       {sourceLabel && (
         <>
-          <span className="text-slate-300 dark:text-slate-600" aria-hidden="true">·</span>
+          <span className="text-slate-300 dark:text-slate-600" aria-hidden="true">
+            ·
+          </span>
           <span className="text-slate-500 dark:text-slate-400 font-normal">{sourceLabel}</span>
         </>
       )}

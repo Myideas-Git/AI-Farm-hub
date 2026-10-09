@@ -133,7 +133,7 @@ export const MyFarmScreen: React.FC<MyFarmScreenProps> = ({
                   </div>
                   <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
                     <span>Stage: Land preparation</span>
-                    <TrustIndicator status="unknown" size="sm" />
+                    <TrustIndicator status="unknown" size="sm" language={preferences?.appLanguage || 'Telugu'} />
                   </div>
                 </button>
               );
@@ -176,14 +176,14 @@ export const MyFarmScreen: React.FC<MyFarmScreenProps> = ({
               Unknown / Unrecorded
             </span>
             <div className="mt-1">
-              <TrustIndicator status="unknown" size="sm" />
+              <TrustIndicator status="unknown" size="sm" language={preferences?.appLanguage || 'Telugu'} />
             </div>
           </div>
 
           <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
             <span className="text-slate-500 dark:text-slate-400 text-[11px] block">{t.myFarm.waterSource}</span>
             <span className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 block mt-0.5 italic">
-              Unknown
+              {t.myFarm.irrigationUnknown}
             </span>
             <span className="text-[11px] text-slate-400 block mt-0.5">
               Zero assumption rule
@@ -229,6 +229,7 @@ export const MyFarmScreen: React.FC<MyFarmScreenProps> = ({
             onConfirmEvent={onConfirmEvent}
             onDeleteEvent={onDeleteEvent}
             onEditEvent={onEditEvent}
+            language={preferences?.appLanguage || 'Telugu'}
           />
         </div>
       </div>

@@ -250,7 +250,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             </div>
           </div>
 
-          <TrustIndicator status="demo" />
+          <TrustIndicator status="demo" language={preferences.appLanguage} />
         </div>
 
         <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed mb-4">
@@ -318,7 +318,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               </div>
 
               <div className="text-right">
-                <TrustIndicator status={evt.status} source={evt.source} size="sm" />
+                <TrustIndicator status={evt.status} source={evt.source} size="sm" language={preferences.appLanguage} />
               </div>
             </div>
           ))}

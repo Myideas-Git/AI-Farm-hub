@@ -11,27 +11,31 @@ import {
   ShieldAlert,
 } from 'lucide-react';
 import { MarketBenchmark, CropCycle, Plot } from '../../types/farm';
+import { AppLanguage } from '../../types/profile';
 import { TrustIndicator } from '../common/TrustIndicator';
+import { getTranslations } from '../../i18n/translations';
 
 interface MarketScreenProps {
   benchmarks: MarketBenchmark[];
   cropCycles: CropCycle[];
   plots: Plot[];
+  language?: AppLanguage;
 }
 
 export const MarketScreen: React.FC<MarketScreenProps> = ({
   benchmarks,
   cropCycles,
   plots,
+  language = 'Telugu',
 }) => {
-  const activeCycles = cropCycles.filter((c) => c.status === 'active');
+  const t = getTranslations(language);
 
   const getTrendIcon = (trend: 'up' | 'down' | 'stable') => {
     switch (trend) {
       case 'up':
-        return <TrendingUp className="w-3.5 h-3.5 text-emerald-700" />;
+        return <TrendingUp className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400" />;
       case 'down':
-        return <TrendingDown className="w-3.5 h-3.5 text-rose-700" />;
+        return <TrendingDown className="w-3.5 h-3.5 text-rose-700 dark:text-rose-400" />;
       case 'stable':
       default:
         return <Minus className="w-3.5 h-3.5 text-slate-500" />;
@@ -49,14 +53,14 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <span className="text-sm font-extrabold text-amber-950 dark:text-amber-100 uppercase tracking-wider">
-                DEMO MARKET DATA — NOT LIVE
+                {t.market.commercialBannerTitle}
               </span>
               <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-100 font-bold">
-                SIMULATION ONLY
+                {t.market.commercialBannerBadge}
               </span>
             </div>
             <p className="text-xs sm:text-sm text-amber-900 dark:text-amber-200 mt-1 leading-relaxed">
-              These commodity rates and mandi prices are strictly fictional illustrative demo data for Phase 0.5 testing. Live market integrations, government eNAM feeds, and spot trade connections are not connected. Do not make commercial selling decisions based on this screen.
+              {t.market.commercialBannerDesc}
             </p>
           </div>
         </div>
@@ -67,28 +71,28 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
           <div>
             <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">
-              Commercial Readiness · "What can I do with my harvest?"
+              {t.phaseBadge} · Commercial Readiness
             </div>
             <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-              Harvest Readiness & Market Benchmarks
+              {t.market.title}
             </h1>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-0.5">
-              Simulated regional mandi benchmarks for Andhra Pradesh crops (Paddy & Groundnut).
+              {t.market.subtitle}
             </p>
           </div>
 
-          <TrustIndicator status="demo" />
+          <TrustIndicator status="demo" language={language} />
         </div>
       </div>
 
-      {/* Anticipated Harvest Volume from Active Crops */}
+      {/* Registered Crops & Field Status */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
         <div>
           <h2 className="text-base font-bold text-slate-900 dark:text-white">
-            Registered Crops & Field Status
+            {t.market.registeredCropsTitle}
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Plot A (Paddy) and Plot B (Groundnut) on Ravi Kumar Farm.
+            {t.market.registeredCropsSubtitle}
           </p>
         </div>
 
@@ -100,101 +104,111 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Sprout className="w-4 h-4 text-emerald-800 dark:text-emerald-400" />
-                  <span className="font-bold text-slate-900 dark:text-white text-sm">
-                    {plot.name}
-                  </span>
+                  <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 flex items-center justify-center font-bold text-xs">
+                    {plot.name.includes('A') ? 'A' : 'B'}
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">{plot.name}</h3>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                      {plot.areaAcres} Acres · {plot.cropName}
+                    </span>
+                  </div>
                 </div>
-                <span className="text-xs font-semibold text-emerald-800 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
-                  {plot.areaAcres} Acres
-                </span>
+                <TrustIndicator status="demo" language={language} />
               </div>
 
-              <div className="grid grid-cols-2 gap-2 text-xs">
+              <div className="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-slate-200/60 dark:border-slate-700/60">
                 <div>
-                  <span className="text-slate-500 dark:text-slate-400 text-[11px] block">Expected Yield</span>
-                  <span className="font-semibold text-slate-700 dark:text-slate-300 text-xs italic">
-                    Unknown / Unrecorded
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block">{t.myFarm.cropStage}</span>
+                  <span className="font-medium text-slate-800 dark:text-slate-200">
+                    Vegetative (Simulated)
                   </span>
                 </div>
                 <div>
-                  <span className="text-slate-500 dark:text-slate-400 text-[11px] block">Current Stage</span>
-                  <span className="font-semibold text-slate-800 dark:text-slate-200 text-xs">
-                    Land preparation
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Estimated Harvest</span>
+                  <span className="font-medium text-slate-800 dark:text-slate-200">
+                    Not fixed (Unrecorded)
                   </span>
                 </div>
-              </div>
-
-              <div className="pt-2 border-t border-slate-200/60 dark:border-slate-700 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
-                <span>Crop: {plot.cropName}</span>
-                <TrustIndicator status="unknown" size="sm" />
               </div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* Fictional APMC Mandi Benchmark Rates Table */}
+      {/* Regional Mandi Benchmark Prices */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs space-y-4">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-100 dark:border-slate-800">
           <div>
             <h2 className="text-base font-bold text-slate-900 dark:text-white">
-              Simulated APMC Mandi Benchmark Rates
+              {t.market.mandiPricesTitle}
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Fictional benchmark price data for Anakapalli AMC Market Yard (Phase 0.5 mock dataset).
+              {t.market.mandiPricesSubtitle}
             </p>
           </div>
-          <span className="text-[11px] text-slate-400 font-mono">
-            UPDATED: OCT 2026 (FICTIONAL)
+          <span className="text-[11px] font-mono bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-slate-600 dark:text-slate-400">
+            Phase 0.5 Simulation
           </span>
         </div>
 
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left border-collapse">
-            <thead>
-              <tr className="border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-800/60">
-                <th className="py-2.5 px-3 font-semibold">Commodity & Variety</th>
-                <th className="py-2.5 px-3 font-semibold">Mandi Center</th>
-                <th className="py-2.5 px-3 font-semibold text-right">Modal Rate (₹/Qtl)</th>
-                <th className="py-2.5 px-3 font-semibold text-right">Trading Range</th>
-                <th className="py-2.5 px-3 font-semibold text-center">Trend</th>
-                <th className="py-2.5 px-3 font-semibold text-center">Data Origin</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-              {benchmarks.map((bm, idx) => (
-                <tr key={idx} className="hover:bg-slate-50/60 dark:hover:bg-slate-800/40 transition-colors">
-                  <td className="py-3 px-3">
-                    <span className="font-bold text-slate-900 dark:text-white block">{bm.cropName}</span>
-                    <span className="text-slate-500 dark:text-slate-400 text-[11px]">{bm.variety}</span>
-                  </td>
-                  <td className="py-3 px-3 text-slate-700 dark:text-slate-300 font-medium">
-                    {bm.marketName}
-                  </td>
-                  <td className="py-3 px-3 text-right font-bold text-slate-900 dark:text-white tabular-nums">
-                    ₹{bm.modalPricePerQuintal.toLocaleString('en-IN')}
-                  </td>
-                  <td className="py-3 px-3 text-right text-slate-600 dark:text-slate-400 tabular-nums">
-                    ₹{bm.minPricePerQuintal} – ₹{bm.maxPricePerQuintal}
-                  </td>
-                  <td className="py-3 px-3 text-center">
-                    <div className="inline-flex items-center gap-1 font-medium capitalize">
+        <div className="space-y-3">
+          {benchmarks.map((bm) => (
+            <div
+              key={bm.cropId}
+              className="p-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/80 hover:border-slate-300 dark:hover:border-slate-600 transition-colors"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-bold text-slate-900 dark:text-white">
+                      {bm.cropName}
+                    </span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400">
+                      ({bm.variety})
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 font-medium text-slate-700 dark:text-slate-300">
                       {getTrendIcon(bm.trend)}
-                      <span className="text-[11px]">{bm.trend}</span>
-                    </div>
-                  </td>
-                  <td className="py-3 px-3 text-center">
-                    <TrustIndicator status="demo" size="sm" />
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                      <span className="capitalize">{bm.trend}</span>
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                    <Store className="w-3.5 h-3.5 text-slate-400" />
+                    <span>{bm.marketName}</span>
+                    <span aria-hidden="true">·</span>
+                    <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Simulated benchmark ({bm.lastUpdatedDate})</span>
+                  </div>
+                </div>
 
-        <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-100 dark:border-slate-700 text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-          * Mandi price feeds are strictly simulated for Phase 0.5. Live prices are subject to moisture test deductions and auction quality gradings.
+                <div className="flex items-center gap-4 text-right">
+                  <div>
+                    <span className="text-[11px] text-slate-400 block">{t.market.minPrice}</span>
+                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 tabular-nums">
+                      ₹{bm.minPricePerQuintal.toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                  <div className="px-3 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-right">
+                    <span className="text-[11px] text-emerald-800 dark:text-emerald-300 font-medium block">
+                      {t.market.modalPrice}
+                    </span>
+                    <span className="text-base font-extrabold text-emerald-950 dark:text-emerald-200 tabular-nums">
+                      ₹{bm.modalPricePerQuintal.toLocaleString('en-IN')}
+                    </span>
+                    <span className="text-[10px] text-emerald-700 dark:text-emerald-400 block">
+                      {t.market.perQuintal}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[11px] text-slate-400 block">{t.market.maxPrice}</span>
+                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 tabular-nums">
+                      ₹{bm.maxPricePerQuintal.toLocaleString('en-IN')}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     </div>

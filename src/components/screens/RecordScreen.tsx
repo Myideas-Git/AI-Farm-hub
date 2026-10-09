@@ -33,14 +33,15 @@ import { FarmerPreferences } from '../../types/profile';
 import { FarmTimeline } from '../timeline/FarmTimeline';
 import { TrustIndicator } from '../common/TrustIndicator';
 import { TRANSLATIONS } from '../../i18n/translations';
-import { VoiceExtractorService, ExtractedDraft } from '../../services/voiceExtractor';
+import { VoiceExtractorService, ExtractedDraft, getLocalDateString } from '../../services/voiceExtractor';
+import { StorageResult } from '../../services/activityStorage';
 
 interface RecordScreenProps {
   plots: Plot[];
   cropCycles: CropCycle[];
   events: FarmEvent[];
   preferences: FarmerPreferences;
-  onAddEvent: (event: FarmEvent) => void;
+  onAddEvent: (event: FarmEvent) => StorageResult<FarmEvent>;
   onConfirmEvent?: (eventId: string) => void;
   onDeleteEvent?: (eventId: string) => void;
   onEditEvent?: (event: FarmEvent) => void;
@@ -68,10 +69,10 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Form state
-  const [formPlotId, setFormPlotId] = useState<string>(plots[0]?.id || '');
+  const [formPlotId, setFormPlotId] = useState<string>(plots[0]?.id || 'plot-a');
   const [formEventType, setFormEventType] = useState<FarmEventType>('land_prep');
-  const [formActivityDate, setFormActivityDate] = useState<string>(
-    new Date().toISOString().split('T')[0]
+  const [formActivityDate, setFormActivityDate] = useState<string>(() =>
+    getLocalDateString()
   );
   const [formTitle, setFormTitle] = useState<string>('');
   const [formDescription, setFormDescription] = useState<string>('');
@@ -200,7 +201,12 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
       updatedAt: new Date().toISOString(),
     };
 
-    onAddEvent(newEvt);
+    const saveRes = onAddEvent(newEvt);
+    if (!saveRes.success) {
+      setErrorMessage(saveRes.error || 'Failed to save record to storage.');
+      return;
+    }
+
     setSavedSuccessMsg(
       explicitlyConfirmed
         ? `Farmer confirmed and saved: "${newEvt.title}"!`
@@ -227,12 +233,14 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
    */
   const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage(null);
 
     if (!formTitle.trim()) {
       setErrorMessage('Please enter an activity title.');
       return;
     }
 
+    const nowIso = new Date().toISOString();
     const newEvt: FarmEvent = {
       eventId: `REC-${Date.now().toString().slice(-5)}`,
       eventType: formEventType,
@@ -242,7 +250,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
       plotName: selectedPlotObj.name,
       cropName: selectedPlotObj.cropName,
       activityDate: formActivityDate || null,
-      recordedDate: new Date().toISOString(),
+      recordedDate: nowIso,
       title: formTitle.trim(),
       description: formDescription.trim() || undefined,
       quantity: formQuantity ? parseFloat(formQuantity) : null,
@@ -250,22 +258,27 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
       areaCoveredAcres: formArea ? parseFloat(formArea) : null,
       cost: null,
       currency: 'INR',
+      // Strict Provenance: manually entered is farmer-reported and pending confirmation
       source: 'farmer_reported',
-      status: 'farmer_confirmed',
-      verificationStatus: 'confirmed',
+      status: 'pending_confirmation',
+      verificationStatus: 'pending',
       isDemo: false,
       evidence: { type: 'none' },
       createdBy: 'Ravi Kumar',
-      confirmedBy: 'Ravi Kumar',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: nowIso,
+      updatedAt: nowIso,
     };
 
-    onAddEvent(newEvt);
-    setSavedSuccessMsg(`Recorded "${newEvt.title}" into farm records!`);
+    const saveRes = onAddEvent(newEvt);
+    if (!saveRes.success) {
+      setErrorMessage(saveRes.error || 'Failed to save record to storage.');
+      return;
+    }
+
+    setSavedSuccessMsg(`Recorded "${newEvt.title}" into farm records (pending confirmation)!`);
     setTimeout(() => setSavedSuccessMsg(null), 4000);
 
-    // Reset
+    // Reset fields only upon verified save
     setFormTitle('');
     setFormDescription('');
     setFormQuantity('');
@@ -283,7 +296,9 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
     unit: string | null,
     area: number
   ) => {
+    setErrorMessage(null);
     const targetPlot = plots.find((p) => p.id === plotId) || plots[0];
+    const nowIso = new Date().toISOString();
     const newEvt: FarmEvent = {
       eventId: `REC-${Date.now().toString().slice(-5)}`,
       eventType: type,
@@ -292,8 +307,8 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
       plotId: targetPlot.id,
       plotName: targetPlot.name,
       cropName: targetPlot.cropName,
-      activityDate: new Date().toISOString().split('T')[0],
-      recordedDate: new Date().toISOString(),
+      activityDate: getLocalDateString(),
+      recordedDate: nowIso,
       title,
       description: `Quick 1-tap recorded on ${targetPlot.name}.`,
       quantity: qty,
@@ -301,18 +316,24 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
       areaCoveredAcres: area,
       cost: null,
       currency: 'INR',
+      // Strict Provenance: quick tap is farmer-reported and pending confirmation
       source: 'farmer_reported',
-      status: 'farmer_confirmed',
-      verificationStatus: 'confirmed',
+      status: 'pending_confirmation',
+      verificationStatus: 'pending',
       isDemo: false,
       evidence: { type: 'none' },
       createdBy: 'Ravi Kumar',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
+      createdAt: nowIso,
+      updatedAt: nowIso,
     };
 
-    onAddEvent(newEvt);
-    setSavedSuccessMsg(`Quick log saved: "${title}"!`);
+    const saveRes = onAddEvent(newEvt);
+    if (!saveRes.success) {
+      setErrorMessage(saveRes.error || 'Failed to save quick action.');
+      return;
+    }
+
+    setSavedSuccessMsg(`Quick log saved: "${title}" (pending confirmation)!`);
     setTimeout(() => setSavedSuccessMsg(null), 4000);
     setActiveTab('timeline');
   };
@@ -511,6 +532,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
             onConfirmEvent={onConfirmEvent}
             onDeleteEvent={onDeleteEvent}
             onEditEvent={onEditEvent}
+            language={preferences.appLanguage}
           />
         </div>
       ) : (
@@ -1006,7 +1028,12 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                       When precision matters: recorded into persistent local farm memory.
                     </p>
                   </div>
-                  <TrustIndicator status="confirmed" size="sm" />
+                  <TrustIndicator
+                    status="draft"
+                    source="farmer_reported"
+                    size="sm"
+                    language={preferences.appLanguage}
+                  />
                 </div>
               </div>
 
