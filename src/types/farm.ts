@@ -4,7 +4,8 @@
  */
 
 export type TrustStatus =
-  | 'confirmed'
+  | 'confirmed' // Independently verified (third-party, official document, or agronomist verified)
+  | 'unverified' // Farmer self-declaration or unverified by independent parties
   | 'estimated'
   | 'demo'
   | 'unknown'
@@ -12,12 +13,12 @@ export type TrustStatus =
   | 'conflicting';
 
 export type EventSource =
-  | 'farmer_reported'
-  | 'ai_extracted'
-  | 'farmer_confirmed'
-  | 'verified_document'
-  | 'demo_data'
-  | 'unknown';
+  | 'farmer_reported' // Manually reported by farmer via form or 1-tap quick action
+  | 'ai_extracted' // Extracted from speech/audio using rule-based parser
+  | 'verified_document' // Document/lab backed record
+  | 'demo_data' // Pre-seeded fictional demo record
+  | 'unknown'
+  | 'farmer_confirmed'; // Backwards-compatible legacy value; new confirmations preserve original capture source
 
 export type RecordStatus =
   | 'draft'
@@ -171,12 +172,15 @@ export interface FarmEvent {
   areaCoveredAcres?: number | null;
   cost?: number | null;
   currency: string;
-  source: EventSource;
-  status: RecordStatus;
-  verificationStatus: TrustStatus;
+  source: EventSource; // Original capture source (e.g. ai_extracted, farmer_reported)
+  originalSource?: EventSource; // Preserved initial source
+  status: RecordStatus; // Lifecycle / confirmation status (e.g. pending_confirmation, farmer_confirmed)
+  verificationStatus: TrustStatus; // Independent verification level (e.g. unverified, pending, confirmed)
   isDemo: boolean;
+  isDateAssigned?: boolean; // Flagged true when date was auto-assigned today for review
+  rawTranscript?: string; // Captured voice transcript note
   evidence: FarmEventEvidence;
-  confidence?: number; // 0 - 1
+  confidence?: number; // 0 - 1 (only when supported by real speech recognition or sensor metrics)
   createdBy: string;
   confirmedBy?: string;
   confirmedAt?: string;

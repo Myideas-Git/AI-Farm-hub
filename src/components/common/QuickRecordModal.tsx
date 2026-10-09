@@ -73,11 +73,11 @@ export const QuickRecordModal: React.FC<QuickRecordModalProps> = ({
       currency: 'INR',
       // Strict Provenance: manual submission is farmer-reported and pending confirmation, never auto-confirmed or verified
       source: 'farmer_reported',
+      originalSource: 'farmer_reported',
       status: 'pending_confirmation',
       verificationStatus: 'pending',
       isDemo: false,
       evidence: { type: 'none' },
-      confidence: 1.0,
       createdBy: farmerName,
       createdAt: nowIso,
       updatedAt: nowIso,

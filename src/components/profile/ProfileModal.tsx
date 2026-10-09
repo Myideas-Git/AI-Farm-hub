@@ -16,6 +16,7 @@ import {
   Clock,
   Shield,
   Layers,
+  AlertTriangle,
 } from 'lucide-react';
 import {
   FarmerProfile,
@@ -39,8 +40,8 @@ interface ProfileModalProps {
   onClose: () => void;
   profile: FarmerProfile;
   preferences: FarmerPreferences;
-  onSaveProfile: (profile: FarmerProfile) => void;
-  onSavePreferences: (preferences: FarmerPreferences) => void;
+  onSaveProfile: (profile: FarmerProfile) => { success: boolean; error?: string };
+  onSavePreferences: (preferences: FarmerPreferences) => { success: boolean; error?: string };
 }
 
 const OBJECTIVE_OPTIONS = [
@@ -88,10 +89,12 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
     migratePreferences(preferences)
   );
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Sync draft states when modal opens or incoming props update
   useEffect(() => {
     if (isOpen) {
+      setErrorMessage(null);
       setDraftProfile({
         ...INITIAL_PROFILE,
         ...profile,
@@ -106,6 +109,55 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   if (!isOpen) return null;
 
   const t = TRANSLATIONS[draftPreferences?.appLanguage] || TRANSLATIONS.Telugu;
+
+  const getObjectiveLabel = (obj: string) => {
+    switch (obj) {
+      case 'Improve farming profitability':
+        return t.preferencesModal.objProfitability;
+      case 'Reduce input costs':
+        return t.preferencesModal.objReduceCosts;
+      case 'Improve crop yield':
+        return t.preferencesModal.objImproveYield;
+      case 'Save water':
+        return t.preferencesModal.objSaveWater;
+      case 'Maintain accurate farm records':
+        return t.preferencesModal.objAccurateRecords;
+      default:
+        return obj;
+    }
+  };
+
+  const getAlertLabel = (alert: string) => {
+    switch (alert) {
+      case 'Severe weather':
+        return t.preferencesModal.alertExtremeWeather;
+      case 'Crop health':
+        return t.preferencesModal.alertPestOutbreak;
+      case 'Important farm alerts':
+        return t.preferencesModal.alertGovtScheme;
+      case 'Payment':
+        return t.preferencesModal.alertMarketSpike;
+      case 'Harvest':
+        return t.preferencesModal.remHarvestWindow;
+      default:
+        return alert;
+    }
+  };
+
+  const getReminderLabel = (rem: string) => {
+    switch (rem) {
+      case 'Irrigation':
+        return t.preferencesModal.remIrrigation;
+      case 'Planned activities':
+        return t.preferencesModal.remFertilizer;
+      case 'Market updates':
+        return t.preferencesModal.alertMarketSpike;
+      case 'Record reminders':
+        return t.preferencesModal.remPestScouting;
+      default:
+        return rem;
+    }
+  };
 
   const handleObjectiveToggle = (obj: string) => {
     setDraftProfile((prev) => {
@@ -161,11 +213,24 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   };
 
   const handleSave = () => {
-    onSaveProfile(draftProfile);
-    onSavePreferences(draftPreferences);
+    setErrorMessage(null);
+    const profileRes = onSaveProfile(draftProfile);
+    const prefsRes = onSavePreferences(draftPreferences);
+
+    if (!profileRes.success || !prefsRes.success) {
+      const err =
+        (!profileRes.success ? profileRes.error : '') ||
+        (!prefsRes.success ? prefsRes.error : '') ||
+        'Storage persistence failed. Please verify storage permissions and retry.';
+      setErrorMessage(err);
+      return; // Do NOT falsely claim success, do NOT close modal, keep user edits intact
+    }
+
     setSaveSuccessMsg(
       draftPreferences.appLanguage === 'Telugu'
         ? 'ప్రొఫైల్ మరియు ప్రాధాన్యతలు విజయవంతంగా భద్రపరచబడ్డాయి!'
+        : draftPreferences.appLanguage === 'Hindi'
+        ? 'प्रोफ़ाइल और प्राथमिकताएं सफलतापूर्वक सहेजी गईं!'
         : 'Profile and preferences successfully saved and applied!'
     );
     setTimeout(() => {
@@ -243,6 +308,22 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
         {/* Scrollable Form Body */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+          {errorMessage && (
+            <div className="p-3 bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-900 dark:text-rose-200 text-xs font-semibold rounded-xl flex items-center justify-between gap-2 animate-fade-in">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 text-rose-700 dark:text-rose-400 shrink-0" />
+                <span>{errorMessage}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setErrorMessage(null)}
+                className="text-[11px] underline font-bold shrink-0 text-rose-700 dark:text-rose-300"
+              >
+                {t.preferencesModal.dismiss}
+              </button>
+            </div>
+          )}
+
           {saveSuccessMsg && (
             <div className="p-3 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 text-xs font-semibold rounded-xl flex items-center gap-2 animate-fade-in">
               <CheckCircle2 className="w-4 h-4 text-emerald-700 dark:text-emerald-400 shrink-0" />
@@ -257,10 +338,10 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
               <div className="p-4 bg-slate-50/70 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800 space-y-3">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
-                    Language Settings (Independent)
+                    {t.preferencesModal.languageIndependent}
                   </span>
                   <span className="text-[11px] text-emerald-800 dark:text-emerald-400 font-medium">
-                    Telugu Default
+                    {t.preferencesModal.teluguDefault}
                   </span>
                 </div>
 
@@ -330,9 +411,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                     }
                     className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 min-h-[40px]"
                   >
-                    <option value="Quick">Quick (Default — 1-tap rapid actions)</option>
-                    <option value="Assisted">Assisted (Step-by-step guidance)</option>
-                    <option value="Detailed">Detailed (Full forms and metadata)</option>
+                    <option value="Quick">{t.preferencesModal.modeQuick}</option>
+                    <option value="Assisted">{t.preferencesModal.modeAssisted}</option>
+                    <option value="Detailed">{t.preferencesModal.modeDetailed}</option>
                   </select>
                 </div>
 
@@ -351,9 +432,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                     }
                     className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 min-h-[40px]"
                   >
-                    <option value="Simple">Simple (Clear, direct summaries)</option>
-                    <option value="Balanced">Balanced (Standard context)</option>
-                    <option value="Detailed">Detailed (Comprehensive agronomic rationale)</option>
+                    <option value="Simple">{t.preferencesModal.styleSimple}</option>
+                    <option value="Balanced">{t.preferencesModal.styleBalanced}</option>
+                    <option value="Detailed">{t.preferencesModal.styleDetailed}</option>
                   </select>
                 </div>
               </div>
@@ -361,7 +442,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
               {/* Theme, Text Size, Contrast */}
               <div className="p-4 bg-slate-50/70 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800 space-y-3">
                 <span className="text-xs font-bold text-slate-900 dark:text-slate-100 block">
-                  Display, Text Size & Contrast
+                  {t.preferencesModal.displaySectionTitle}
                 </span>
 
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -380,9 +461,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                       }
                       className="w-full px-2.5 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 min-h-[40px]"
                     >
-                      <option value="System">System (Auto)</option>
-                      <option value="Light">Light</option>
-                      <option value="Dark">Dark</option>
+                      <option value="System">{t.preferencesModal.themeSystem}</option>
+                      <option value="Light">{t.preferencesModal.themeLight}</option>
+                      <option value="Dark">{t.preferencesModal.themeDark}</option>
                     </select>
                   </div>
 
@@ -401,9 +482,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                       }
                       className="w-full px-2.5 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 min-h-[40px]"
                     >
-                      <option value="Standard">Standard</option>
-                      <option value="Large">Large (Default for outdoor)</option>
-                      <option value="Extra large">Extra large</option>
+                      <option value="Standard">{t.preferencesModal.textSizeStandard}</option>
+                      <option value="Large">{t.preferencesModal.textSizeLarge}</option>
+                      <option value="Extra large">{t.preferencesModal.textSizeExtraLarge}</option>
                     </select>
                   </div>
 
@@ -422,8 +503,8 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                       }
                       className="w-full px-2.5 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 min-h-[40px]"
                     >
-                      <option value="Standard">Standard</option>
-                      <option value="High contrast">High contrast (Sunlight)</option>
+                      <option value="Standard">{t.preferencesModal.contrastStandard}</option>
+                      <option value="High contrast">{t.preferencesModal.contrastHigh}</option>
                     </select>
                   </div>
                 </div>
@@ -500,9 +581,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                     }
                     className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 min-h-[40px]"
                   >
-                    <option value="Important situations">Important situations only (Default)</option>
-                    <option value="All recommendations">All recommendations</option>
-                    <option value="Only when requested">Only when requested</option>
+                    <option value="Important situations">{t.preferencesModal.recImportant}</option>
+                    <option value="All recommendations">{t.preferencesModal.recAll}</option>
+                    <option value="Only when requested">{t.preferencesModal.recRequested}</option>
                   </select>
                 </div>
 
@@ -520,9 +601,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                     }
                     className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 min-h-[40px]"
                   >
-                    <option value="Balanced">Balanced (Default)</option>
-                    <option value="Touch">Touch first</option>
-                    <option value="Voice">Voice first</option>
+                    <option value="Balanced">{t.preferencesModal.interactionBalanced}</option>
+                    <option value="Touch">{t.preferencesModal.interactionTouch}</option>
+                    <option value="Voice">{t.preferencesModal.interactionVoice}</option>
                   </select>
                 </div>
               </div>
@@ -535,7 +616,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                     <span>{t.preferencesModal.quietHoursLabel}</span>
                   </span>
                   <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                    No audible notifications will sound during this time.
+                    {t.preferencesModal.quietHoursNotice}
                   </span>
                 </div>
                 <div className="flex items-center gap-2 text-xs">
@@ -553,7 +634,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                     }
                     className="px-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded text-xs"
                   />
-                  <span>to</span>
+                  <span>{t.preferencesModal.timeTo}</span>
                   <input
                     type="time"
                     value={draftPreferences.quietHours?.end ?? '06:00'}
@@ -574,12 +655,12 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
               {/* Enabled Alert & Reminder Categories */}
               <div className="space-y-3">
                 <span className="text-xs font-bold text-slate-900 dark:text-slate-100 block">
-                  Alert & Reminder Subscriptions
+                  {t.preferencesModal.subscriptionsTitle}
                 </span>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                   <div className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl space-y-2">
                     <span className="font-semibold text-slate-700 dark:text-slate-300 block text-[11px]">
-                      Important Alerts:
+                      {t.preferencesModal.importantAlertsLabel}
                     </span>
                     {ALERT_OPTIONS.map((alert) => (
                       <label key={alert} className="flex items-center gap-2 cursor-pointer">
@@ -589,14 +670,14 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                           onChange={() => handleAlertToggle(alert)}
                           className="rounded text-emerald-800 focus:ring-emerald-700"
                         />
-                        <span>{alert}</span>
+                        <span>{getAlertLabel(alert)}</span>
                       </label>
                     ))}
                   </div>
 
                   <div className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl space-y-2">
                     <span className="font-semibold text-slate-700 dark:text-slate-300 block text-[11px]">
-                      Activity Reminders:
+                      {t.preferencesModal.activityRemindersLabel}
                     </span>
                     {REMINDER_OPTIONS.map((reminder) => (
                       <label key={reminder} className="flex items-center gap-2 cursor-pointer">
@@ -606,7 +687,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                           onChange={() => handleReminderToggle(reminder)}
                           className="rounded text-emerald-800 focus:ring-emerald-700"
                         />
-                        <span>{reminder}</span>
+                        <span>{getReminderLabel(reminder)}</span>
                       </label>
                     ))}
                   </div>
@@ -619,14 +700,14 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           {activeTab === 'profile' && (
             <div className="space-y-5">
               <div className="bg-amber-50 dark:bg-amber-950/40 p-3.5 rounded-xl border border-amber-200 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200 leading-relaxed">
-                <strong>Demo Farmer Notice:</strong> These are demo values (Ravi Kumar / Ravi garu, Rasapūdipalem). Phone number, GPS coordinates, and soil tests remain unrecorded. We never invent missing data.
+                {t.preferencesModal.demoNotice}
               </div>
 
               {/* Name & Preferred Name */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
-                    Full Name *
+                    {t.preferencesModal.fullNameLabel}
                   </label>
                   <input
                     type="text"
@@ -650,7 +731,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
                 <div>
                   <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
-                    Preferred Name / Address Greeting *
+                    {t.preferencesModal.preferredNameLabel}
                   </label>
                   <input
                     type="text"
@@ -661,7 +742,13 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                         preferredName: e.target.value,
                       })
                     }
-                    placeholder="e.g. Ravi garu"
+                    placeholder={
+                      draftPreferences.appLanguage === 'Telugu'
+                        ? 'ఉదా. రవి గారు'
+                        : draftPreferences.appLanguage === 'Hindi'
+                        ? 'उदा. रवि जी'
+                        : 'e.g. Ravi garu'
+                    }
                     className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 min-h-[42px]"
                     required
                   />
@@ -672,7 +759,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
-                    Role
+                    {t.preferencesModal.roleLabel}
                   </label>
                   <input
                     type="text"
@@ -684,7 +771,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
                 <div>
                   <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
-                    Experience (Years)
+                    {t.preferencesModal.experienceYearsLabel}
                   </label>
                   <input
                     type="number"
@@ -703,7 +790,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
 
                 <div>
                   <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
-                    Digital Comfort
+                    {t.preferencesModal.digitalComfortLabel}
                   </label>
                   <select
                     value={draftProfile.digitalComfort}
@@ -715,9 +802,9 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                     }
                     className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 min-h-[40px]"
                   >
-                    <option value="Basic">Basic</option>
-                    <option value="Intermediate">Intermediate (Default)</option>
-                    <option value="Advanced">Advanced</option>
+                    <option value="Basic">{t.preferencesModal.digitalBasic}</option>
+                    <option value="Intermediate">{t.preferencesModal.digitalIntermediate}</option>
+                    <option value="Advanced">{t.preferencesModal.digitalAdvanced}</option>
                   </select>
                 </div>
               </div>
@@ -726,7 +813,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
-                    Village
+                    {t.preferencesModal.villageLabel}
                   </label>
                   <input
                     type="text"
@@ -737,7 +824,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
-                    District
+                    {t.preferencesModal.districtLabel}
                   </label>
                   <input
                     type="text"
@@ -748,7 +835,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
-                    State
+                    {t.preferencesModal.stateLabel}
                   </label>
                   <input
                     type="text"
@@ -759,7 +846,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
-                    Country
+                    {t.preferencesModal.countryLabel}
                   </label>
                   <input
                     type="text"
@@ -773,7 +860,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
               {/* Primary Objectives */}
               <div>
                 <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
-                  Primary Objectives (Ravi Kumar)
+                  {t.preferencesModal.primaryObjectivesLabel} ({draftProfile.preferredName || draftProfile.fullName})
                 </label>
                 <div className="space-y-2">
                   {OBJECTIVE_OPTIONS.map((obj) => {
@@ -800,7 +887,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                         >
                           {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
                         </div>
-                        <span>{obj}</span>
+                        <span>{getObjectiveLabel(obj)}</span>
                       </div>
                     );
                   })}

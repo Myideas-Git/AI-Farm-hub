@@ -53,6 +53,30 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   const primaryPlot = plots[0]; // Plot A — Paddy (2 acres)
   const secondaryPlot = plots[1]; // Plot B — Groundnut (3 acres)
 
+  const getObjectiveLabel = (obj: string): string => {
+    switch (obj) {
+      case 'Maximize farm profitability':
+        return t.preferencesModal.objProfitability;
+      case 'Reduce input costs':
+        return t.preferencesModal.objReduceCosts;
+      case 'Improve crop yield':
+        return t.preferencesModal.objImproveYield;
+      case 'Save water':
+        return t.preferencesModal.objSaveWater;
+      case 'Maintain accurate farm records':
+        return t.preferencesModal.objAccurateRecords;
+      default:
+        return obj;
+    }
+  };
+
+  const displayAreaText =
+    preferences.appLanguage === 'Telugu'
+      ? `${farm.totalAreaAcres} ఎకరాలు (ప్లాట్ A: 2 ఎక + ప్లాట్ B: 3 ఎక)`
+      : preferences.appLanguage === 'Hindi'
+      ? `${farm.totalAreaAcres} एकड़ (प्लॉट A: 2 एकड़ + प्लॉट B: 3 एकड़)`
+      : `${farm.totalAreaAcres} Acres (Plot A: 2 Ac + Plot B: 3 Ac)`;
+
   return (
     <div className="space-y-6">
       {/* Top Banner: Farmer greeting & context */}
@@ -65,7 +89,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               <span>{farm.village}, {farm.district}</span>
               <span aria-hidden="true">·</span>
               <span className="font-semibold text-emerald-800 dark:text-emerald-400">
-                {farm.totalAreaAcres} Acres (Plot A: 2 Ac + Plot B: 3 Ac)
+                {displayAreaText}
               </span>
               <span aria-hidden="true">·</span>
               <button
@@ -99,13 +123,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         {/* Primary Objectives Tags */}
         {profile.primaryObjectives.length > 0 && (
           <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
-            <span className="text-slate-400 font-medium">Objectives:</span>
+            <span className="text-slate-400 font-medium">{t.home.objectivesLabel}</span>
             {profile.primaryObjectives.map((obj, i) => (
               <span
                 key={i}
                 className="px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium text-[11px]"
               >
-                {obj}
+                {getObjectiveLabel(obj)}
               </span>
             ))}
           </div>
@@ -139,17 +163,17 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <div className="grid grid-cols-2 gap-2 text-xs text-slate-600 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-1.5">
                 <Droplets className="w-3.5 h-3.5 text-sky-600" />
-                <span>Humidity: 62%</span>
+                <span>{t.home.humidity}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <Wind className="w-3.5 h-3.5 text-slate-500" />
-                <span>Wind: 14 km/h</span>
+                <span>{t.home.wind}</span>
               </div>
             </div>
           </div>
 
           <div className="mt-3 pt-2 text-[11px] text-slate-400 border-t border-slate-100 dark:border-slate-800">
-            Anakapalli Station · Simulated Demo Data
+            {t.home.weatherStation}
           </div>
         </div>
 
@@ -167,17 +191,21 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded-lg">
                 <div className="flex justify-between text-xs">
                   <span className="font-bold text-slate-900 dark:text-white">{primaryPlot?.name}</span>
-                  <span className="text-emerald-800 dark:text-emerald-400 font-semibold">{primaryPlot?.areaAcres} Acres</span>
+                  <span className="text-emerald-800 dark:text-emerald-400 font-semibold">
+                    {primaryPlot?.areaAcres} {preferences.appLanguage === 'Telugu' ? 'ఎకరాలు' : preferences.appLanguage === 'Hindi' ? 'एकड़' : 'Acres'}
+                  </span>
                 </div>
-                <div className="text-[11px] text-slate-500 mt-0.5">Crop: Paddy / Rice (Land preparation)</div>
+                <div className="text-[11px] text-slate-500 mt-0.5">{t.home.cropPaddyLandPrep}</div>
               </div>
 
               <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded-lg">
                 <div className="flex justify-between text-xs">
                   <span className="font-bold text-slate-900 dark:text-white">{secondaryPlot?.name}</span>
-                  <span className="text-emerald-800 dark:text-emerald-400 font-semibold">{secondaryPlot?.areaAcres} Acres</span>
+                  <span className="text-emerald-800 dark:text-emerald-400 font-semibold">
+                    {secondaryPlot?.areaAcres} {preferences.appLanguage === 'Telugu' ? 'ఎకరాలు' : preferences.appLanguage === 'Hindi' ? 'एकड़' : 'Acres'}
+                  </span>
                 </div>
-                <div className="text-[11px] text-slate-500 mt-0.5">Crop: Groundnut (Land preparation)</div>
+                <div className="text-[11px] text-slate-500 mt-0.5">{t.home.cropGroundnutLandPrep}</div>
               </div>
             </div>
           </div>
@@ -187,7 +215,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             onClick={() => onNavigate('my-farm')}
             className="flex items-center justify-between text-xs font-medium text-emerald-800 dark:text-emerald-400 hover:underline pt-2 border-t border-slate-100 dark:border-slate-800 min-h-[32px]"
           >
-            <span>View Plot A & Plot B details</span>
+            <span>{t.home.viewPlotDetails}</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -208,10 +236,10 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               <div className="p-2.5 rounded-lg bg-amber-50/70 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-xs">
                 <div className="font-semibold text-slate-900 dark:text-white flex items-center gap-1.5">
                   <Clock className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-                  <span>Land Preparation Pending</span>
+                  <span>{t.home.landPrepPending}</span>
                 </div>
                 <div className="text-slate-600 dark:text-slate-400 mt-1 text-[11px] leading-relaxed">
-                  Field preparation scheduled for Plot A (Paddy) and Plot B (Groundnut). Tap Record Activity when finished.
+                  {t.home.landPrepPendingDesc}
                 </div>
               </div>
             </div>
@@ -222,7 +250,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             onClick={onQuickRecord}
             className="flex items-center justify-between text-xs font-medium text-emerald-800 dark:text-emerald-400 hover:underline pt-2 border-t border-slate-100 dark:border-slate-800 min-h-[32px]"
           >
-            <span>Log land prep when completed</span>
+            <span>{t.home.logLandPrepAction}</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -238,14 +266,14 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-                  Field Intelligence Observation
+                  {t.home.fieldIntelligenceObs}
                 </span>
                 <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-sky-100 dark:bg-sky-950 text-sky-800 dark:text-sky-300 border border-sky-200 dark:border-sky-800 font-semibold">
-                  DEMO INSIGHT
+                  {t.insights.demoBadge}
                 </span>
               </div>
               <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mt-0.5">
-                {insight.title}
+                {insight.isDemo ? (t.insights.sampleInsightTitle || insight.title) : insight.title}
               </h2>
             </div>
           </div>
@@ -254,19 +282,19 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         </div>
 
         <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed mb-4">
-          {insight.detail}
+          {insight.isDemo ? (t.insights.sampleInsightDetail || insight.detail) : insight.detail}
         </p>
 
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-emerald-200/60 dark:border-emerald-800 text-xs">
           <span className="text-slate-600 dark:text-slate-400 italic">
-            "{insight.recommendationPrompt}"
+            "{insight.isDemo ? (t.insights.sampleInsightRecommendation || insight.recommendationPrompt) : insight.recommendationPrompt}"
           </span>
           <button
             type="button"
             onClick={() => onNavigate('insights')}
             className="inline-flex items-center gap-1.5 font-semibold text-emerald-800 dark:text-emerald-400 hover:underline min-h-[36px]"
           >
-            <span>Explore insights</span>
+            <span>{t.home.exploreInsights}</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -312,7 +340,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                     )}
                   </div>
                   <div className="text-slate-500 dark:text-slate-400 text-[11px]">
-                    {evt.plotName} · {evt.activityDate ? evt.activityDate : 'Date: Unknown'}
+                    {evt.plotName} · {evt.activityDate ? evt.activityDate : t.home.unknownDate}
                   </div>
                 </div>
               </div>

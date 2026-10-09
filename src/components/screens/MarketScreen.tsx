@@ -71,7 +71,7 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
           <div>
             <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">
-              {t.phaseBadge} · Commercial Readiness
+              {t.phaseBadge} · {t.market.readinessLabel}
             </div>
             <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
               {t.market.title}
@@ -110,7 +110,7 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({
                   <div>
                     <h3 className="text-sm font-bold text-slate-900 dark:text-white">{plot.name}</h3>
                     <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                      {plot.areaAcres} Acres · {plot.cropName}
+                      {plot.areaAcres} {language === 'Telugu' ? 'ఎకరాలు' : language === 'Hindi' ? 'एकड़' : 'Acres'} · {plot.cropName}
                     </span>
                   </div>
                 </div>
@@ -121,13 +121,13 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({
                 <div>
                   <span className="text-[11px] text-slate-500 dark:text-slate-400 block">{t.myFarm.cropStage}</span>
                   <span className="font-medium text-slate-800 dark:text-slate-200">
-                    Vegetative (Simulated)
+                    {t.market.cropStageVegetativeSimulated}
                   </span>
                 </div>
                 <div>
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block">Estimated Harvest</span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block">{t.myFarm.yieldTargetActual}</span>
                   <span className="font-medium text-slate-800 dark:text-slate-200">
-                    Not fixed (Unrecorded)
+                    {t.market.estimatedHarvestUnrecorded}
                   </span>
                 </div>
               </div>
@@ -148,7 +148,7 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({
             </p>
           </div>
           <span className="text-[11px] font-mono bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-slate-600 dark:text-slate-400">
-            Phase 0.5 Simulation
+            {t.market.simulationBadge}
           </span>
         </div>
 
@@ -169,7 +169,13 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({
                     </span>
                     <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 font-medium text-slate-700 dark:text-slate-300">
                       {getTrendIcon(bm.trend)}
-                      <span className="capitalize">{bm.trend}</span>
+                      <span>
+                        {bm.trend === 'up'
+                          ? (language === 'Telugu' ? 'పెరుగుతోంది' : language === 'Hindi' ? 'बढ़ रहा है' : 'Rising')
+                          : bm.trend === 'down'
+                          ? (language === 'Telugu' ? 'తగ్గుతోంది' : language === 'Hindi' ? 'घट रहा है' : 'Falling')
+                          : (language === 'Telugu' ? 'స్థిరంగా ఉంది' : language === 'Hindi' ? 'स्थिर' : 'Stable')}
+                      </span>
                     </span>
                   </div>
                   <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
@@ -177,7 +183,7 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({
                     <span>{bm.marketName}</span>
                     <span aria-hidden="true">·</span>
                     <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Simulated benchmark ({bm.lastUpdatedDate})</span>
+                    <span>{t.market.simulatedBenchmark} ({bm.lastUpdatedDate})</span>
                   </div>
                 </div>
 

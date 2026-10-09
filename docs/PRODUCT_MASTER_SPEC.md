@@ -43,27 +43,36 @@ The architecture strictly distinguishes:
 
 ---
 
-## 4. Provenance & Trust Model
+## 4. Provenance & Trust Model (Strict Three-Dimensional Separation)
 
-Every record must distinguish:
-1. **Source**:
-   - `farmer_reported`: Directly entered by farmer via form, touch, or note.
-   - `ai_extracted`: Parsed by speech recognition or rule-based extractor.
-   - `farmer_confirmed`: Explicitly reviewed and confirmed by farmer.
-   - `verified_document`: Supported by verified physical receipt or soil test certificate.
-   - `demo_data`: Illustrative sample data.
-2. **Status**:
-   - `pending_confirmation`: Draft or newly entered record awaiting farmer confirmation.
+To ensure tamper-proof integrity and complete transparency, every record maintains three independent, orthogonal dimensions:
+
+1. **Capture Source (`source` & `originalSource`)**:
+   - `farmer_reported`: Directly entered by farmer via manual form or 1-tap quick action.
+   - `ai_extracted`: Parsed from voice speech audio using deterministic rule-based extractor.
+   - `verified_document`: Accompanied by physical lab test report, invoice, or certificate.
+   - `demo_data`: Pre-seeded baseline demo holding data.
+   - `unknown`: Capture origin not recorded.
+   *Invariant*: When a farmer confirms a record, the original capture `source` is strictly PRESERVED and never overwritten.
+
+2. **Lifecycle & Confirmation Status (`status`)**:
+   - `draft`: Incomplete draft in edit mode.
+   - `pending_confirmation`: Newly created record awaiting farmer review.
    - `farmer_confirmed`: Explicitly confirmed by farmer.
-   - `conflicting`: Contradicts existing records.
-   - `demo`: Baseline demo activity.
-3. **Verification**:
-   - `confirmed`: Verified through physical document/process.
-   - `pending`: Unverified.
-   - `estimated`: Derived calculation.
-   - `unknown`: Not recorded. Never guess.
+   - `conflicting`: Overlapping or contradictory field activity detected.
+   - `demo`: Baseline demonstration record.
 
-**Mandatory Rule**: Manual form submission is `farmer_reported` and `pending_confirmation`. It is NEVER auto-confirmed or marked verified without an explicit confirmation action.
+3. **Independent Verification Status (`verificationStatus`)**:
+   - `confirmed`: Independently audited by agronomist, official certificate, or third party.
+   - `pending` / `unverified`: Farmer self-declaration or pending independent verification.
+   - `estimated`: Calculated metric.
+   - `unknown`: Verification level unknown.
+
+**Mandatory Invariant Rules**:
+- Farmer confirmation does NOT elevate `verificationStatus` to `confirmed` (farmer confirmation is not third-party certification).
+- Confirmation updates `status` to `farmer_confirmed`, populating `confirmedBy` and `confirmedAt`, while `source` remains intact (e.g. `ai_extracted` or `farmer_reported`).
+- Confidence scores are never hardcoded (e.g. no fake `0.95`). Dynamic confidence from browser speech recognition is used or left undefined.
+- Field edits append to immutable `correctionHistory` tracking field, old value, new value, and timestamp.
 
 ---
 

@@ -139,7 +139,10 @@ export class VoiceExtractorService {
       onResult({
         transcript: finalTranscript || interimTranscript,
         isFinal: !!finalTranscript,
-        confidence: event.results[0]?.[0]?.confidence || 0.85,
+        confidence:
+          typeof event.results[0]?.[0]?.confidence === 'number'
+            ? event.results[0][0].confidence
+            : undefined,
       });
     };
 

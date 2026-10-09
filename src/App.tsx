@@ -54,6 +54,8 @@ export default function App() {
   const [isQuickRecordOpen, setIsQuickRecordOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [resetModalType, setResetModalType] = useState<'records_only' | 'all_defaults' | null>(null);
+  const [resetError, setResetError] = useState<string | null>(null);
+  const [resetSuccessMsg, setResetSuccessMsg] = useState<string | null>(null);
 
   // Persistent Profile & Preferences State
   const [profile, setProfile] = useState<FarmerProfile>(() => {
@@ -112,21 +114,31 @@ export default function App() {
   const [qaViewMode, setQaViewMode] = useState<'standard' | 'empty' | 'error'>('standard');
   const [showQaBar, setShowQaBar] = useState(false);
 
-  const handleSaveProfile = (updatedProfile: FarmerProfile) => {
-    setProfile(updatedProfile);
+  const handleSaveProfile = (updatedProfile: FarmerProfile): { success: boolean; error?: string } => {
     try {
       localStorage.setItem(STORAGE_KEY_PROFILE, JSON.stringify(updatedProfile));
-    } catch (e) {
-      console.warn('Local storage write failed', e);
+      setProfile(updatedProfile);
+      return { success: true };
+    } catch (e: any) {
+      const isQuota = e?.name === 'QuotaExceededError' || e?.code === 22 || e?.code === 1014;
+      const errorMsg = isQuota
+        ? 'Storage quota exceeded. Unable to save profile changes. Please free up browser storage.'
+        : 'Failed to save profile to browser storage. Your edits are preserved for retry.';
+      return { success: false, error: errorMsg };
     }
   };
 
-  const handleSavePreferences = (updatedPrefs: FarmerPreferences) => {
-    setPreferences(updatedPrefs);
+  const handleSavePreferences = (updatedPrefs: FarmerPreferences): { success: boolean; error?: string } => {
     try {
       localStorage.setItem(STORAGE_KEY_PREFS, JSON.stringify(updatedPrefs));
-    } catch (e) {
-      console.warn('Local storage write failed', e);
+      setPreferences(updatedPrefs);
+      return { success: true };
+    } catch (e: any) {
+      const isQuota = e?.name === 'QuotaExceededError' || e?.code === 22 || e?.code === 1014;
+      const errorMsg = isQuota
+        ? 'Storage quota exceeded. Unable to save preferences. Please free up browser storage.'
+        : 'Failed to save preferences to browser storage. Your settings are preserved for retry.';
+      return { success: false, error: errorMsg };
     }
   };
 
@@ -173,28 +185,51 @@ export default function App() {
     return result;
   };
 
-  // Safe confirmed reset execution
+  // Safe confirmed reset execution with accurate error reporting and verified storage operations
   const executeReset = () => {
+    setResetError(null);
     if (resetModalType === 'records_only') {
       const res = ActivityStorageService.resetAllFarmerRecords();
       if (res.success) {
         setEvents(INITIAL_DEMO_EVENTS);
+        setResetSuccessMsg(t.resetModal.recordsResetSuccess);
+        setTimeout(() => setResetSuccessMsg(null), 4000);
+        setResetModalType(null);
+      } else {
+        setResetError(res.error || t.resetModal.resetError);
       }
     } else if (resetModalType === 'all_defaults') {
-      ActivityStorageService.resetAllFarmerRecords();
-      setEvents(INITIAL_DEMO_EVENTS);
-      setSyncState('online');
-      setQaViewMode('standard');
-      setProfile(INITIAL_FARMER_PROFILE);
-      setPreferences(INITIAL_FARMER_PREFERENCES);
+      const errors: string[] = [];
+      const resRecords = ActivityStorageService.resetAllFarmerRecords();
+      if (!resRecords.success) {
+        errors.push(resRecords.error || 'Failed to clear farmer records from storage');
+      }
       try {
         localStorage.removeItem(STORAGE_KEY_PROFILE);
+      } catch {
+        errors.push('Failed to clear profile from storage');
+      }
+      try {
         localStorage.removeItem(STORAGE_KEY_PREFS);
       } catch {
-        // ignore
+        errors.push('Failed to clear preferences from storage');
       }
+
+      if (errors.length > 0) {
+        setResetError(`${t.resetModal.partialResetError}: ${errors.join(', ')}`);
+        return; // Do NOT update in-memory state or claim success if any storage operation failed
+      }
+
+      // Verified persistence success across all storage keys
+      setEvents(INITIAL_DEMO_EVENTS);
+      setProfile(INITIAL_FARMER_PROFILE);
+      setPreferences(INITIAL_FARMER_PREFERENCES);
+      setSyncState('online');
+      setQaViewMode('standard');
+      setResetSuccessMsg(t.resetModal.allResetSuccess);
+      setTimeout(() => setResetSuccessMsg(null), 4000);
+      setResetModalType(null);
     }
-    setResetModalType(null);
   };
 
   // Determine root scale class based on preferences
@@ -233,6 +268,14 @@ export default function App() {
         onOpenProfile={() => setIsProfileOpen(true)}
         language={preferences.appLanguage}
       />
+
+      {/* Successful Reset Feedback Banner */}
+      {resetSuccessMsg && (
+        <div className="bg-emerald-800 text-white px-4 py-2.5 text-xs text-center font-bold flex items-center justify-center gap-2 animate-fade-in shadow-xs">
+          <Check className="w-4 h-4 shrink-0 text-emerald-200" />
+          <span>{resetSuccessMsg}</span>
+        </div>
+      )}
 
       {/* Storage Health Notice if unreadable cache was quarantined */}
       {storageNotice && (
@@ -596,18 +639,28 @@ export default function App() {
               <p>• {t.resetModal.whatRetained}</p>
             </div>
 
+            {resetError && (
+              <div className="p-2.5 bg-rose-50 dark:bg-rose-950/60 border border-rose-300 dark:border-rose-800 rounded-lg text-rose-800 dark:text-rose-200 text-xs font-semibold animate-fade-in flex items-start gap-1.5">
+                <AlertTriangle className="w-4 h-4 shrink-0 text-rose-700 mt-0.5" />
+                <span>{resetError}</span>
+              </div>
+            )}
+
             <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
               <button
                 type="button"
-                onClick={() => setResetModalType(null)}
-                className="px-3.5 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                onClick={() => {
+                  setResetModalType(null);
+                  setResetError(null);
+                }}
+                className="px-3.5 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors min-h-[38px]"
               >
                 {t.resetModal.cancelText}
               </button>
               <button
                 type="button"
                 onClick={executeReset}
-                className="px-4 py-2 rounded-lg bg-rose-700 text-white font-bold hover:bg-rose-800 transition-colors shadow-xs"
+                className="px-4 py-2 rounded-lg bg-rose-700 text-white font-bold hover:bg-rose-800 transition-colors shadow-xs min-h-[38px]"
               >
                 {t.resetModal.confirmText}
               </button>

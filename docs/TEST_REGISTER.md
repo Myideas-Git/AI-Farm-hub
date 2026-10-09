@@ -1,42 +1,116 @@
 # AI Farm Hub — Test Register
 
-- **Document Version**: 1.1.0
+- **Document Version**: 1.2.0
 - **Execution Date**: October 2026
-- **Test Harness**: TypeScript Verification (`npm run lint`), Production Build Compilation (`npm run build`), Module Unit/Regression Validation
+- **Test Harness**: TypeScript Verification (`npm run lint`), Production Build Compilation (`npm run build`), Node/TSX Automated Test Suite (`npm test`)
 
 ---
 
-## 1. Executed Test Cases
+## 1. Automated Test Execution Summary
 
-| Test ID | Requirement ID | Scenario | Test Inputs / Procedure | Expected Result | Actual Result | Status |
+Command: `npm test` (`tsx --test src/tests/regression.test.ts`)
+Total Tests: **15 passed, 0 failed, 0 skipped**
+Execution Duration: **628 ms**
+
+| Test ID | Suite | Scenario | Test Inputs / Procedure | Expected Result | Actual Result | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **TEST-BUILD-01** | Repository Integrity | TypeScript Typecheck & Lint | Execute `npm run lint` (`tsc --noEmit`) | 0 TypeScript errors | Exited with code 0, 0 errors | **Passed** |
-| **TEST-BUILD-02** | Repository Integrity | Production Vite Build | Execute `npm run build` (`vite build`) | Successful build output in `dist/` | Build succeeded in 321ms, `dist/index.html` created | **Passed** |
-| **TEST-STOR-01** | AFH-001 | Successful Activity Save | Call `saveRecord` with valid `FarmEvent` | Returns `success: true`, record persisted in `localStorage` | `success: true`, data returned, loaded by `loadAllRecords` | **Passed** |
-| **TEST-STOR-02** | AFH-001 | Quota / Storage Failure Handling | Simulate `QuotaExceededError` in `saveRecord` | Returns `success: false, code: 'QUOTA_EXCEEDED'`, error message displayed | `success: false`, useful error returned, inputs preserved in form | **Passed** |
-| **TEST-STOR-03** | AFH-001 | Corrupted JSON Quarantine | Seed `localStorage` with non-JSON string `"{bad"` | Does not erase history silently; backs up to `farm_intel_corrupt_backup_*`; returns `isCorrupt: true` | Data quarantined to backup key; `isCorrupt: true` returned; baseline demo preserved | **Passed** |
-| **TEST-STOR-04** | AFH-002 | Duplicate Double-Submission Prevention | Submit identical activity twice within 10 seconds | Second submission flagged with `isDuplicate: true, code: 'DUPLICATE'` | Duplicate rejected with clear error; farmer prompted before re-recording | **Passed** |
-| **TEST-PROV-01** | AFH-003 | Manual Entry Provenance | Submit manual detailed form in `RecordScreen` | `source: 'farmer_reported', status: 'pending_confirmation', verificationStatus: 'pending'` | Created with `farmer_reported` and `pending_confirmation`, not auto-confirmed | **Passed** |
-| **TEST-PROV-02** | AFH-003 | Explicit Farmer Confirmation | Click "Confirm Record" on timeline card | Calls `confirmRecord`, status becomes `farmer_confirmed`, `confirmedBy` set to farmer name | Status updated to `farmer_confirmed`, `confirmedBy` populated, history preserved | **Passed** |
-| **TEST-ID-01** | AFH-004 | Active Profile Identity Validation | Create record via `QuickRecordModal` | Uses `farmerId: 'farmer-ravi-01'`, `farmId: 'farm-ravi-01'`, `createdBy: 'Ravi Kumar'` | All created records reference active farmer Ravi Kumar and farm IDs | **Passed** |
-| **TEST-EDIT-01** | AFH-005 | Edit Correction History | Edit title & quantity on saved event | `correctionHistory` records old and new values, timestamps, and reason | Event updated with `correctionHistory` containing 2 entries; prior source preserved | **Passed** |
-| **TEST-I18N-01** | AFH-006 | Telugu Language Rendering | Select `appLanguage: 'Telugu'` | TopBar, BottomNav, Quick modal, Status indicators, Market banner in Telugu | All labels render in Telugu (e.g. 'హోమ్', 'నా పొలం', 'నమోదు') | **Passed** |
-| **TEST-I18N-02** | AFH-006 | Hindi Language Rendering | Select `appLanguage: 'Hindi'` | TopBar, BottomNav, Quick modal, Status indicators in Hindi | All labels render in Hindi (e.g. 'होम', 'मेरा खेत', 'दर्ज करें') | **Passed** |
-| **TEST-I18N-03** | AFH-006 | Document Lang Attribute Sync | Switch between English, Telugu, Hindi | `<html lang>` updates to `en`, `te`, `hi` respectively | `document.documentElement.lang` synced in `useEffect` | **Passed** |
-| **TEST-VOICE-01**| AFH-007 | "Applied fertilizer to paddy" | Input transcript: "I applied fertilizer to my paddy field." | `eventType: 'fertilizer', fertilizerName: null, quantity: null, area: null, crop: 'Paddy', plot: 'plot-a'` | Zero invented values. Fertilizer name and quantity flagged for clarification | **Passed** |
-| **TEST-VOICE-02**| AFH-007 | "50 kg urea on 2-acre plot yesterday" | Input transcript: "I used 50 kilograms of urea on my two-acre paddy plot yesterday." | `fertilizerName: 'Urea', quantity: 50, unit: 'kg', area: 2.0, plot: 'plot-a', date: yesterdayLocal` | All mentioned facts extracted accurately without hallucinations | **Passed** |
-| **TEST-VOICE-03**| AFH-007 | "Sprayed medicine on crop" | Input transcript: "I sprayed medicine on the crop." | `eventType: 'spray', productName: null, isTentative: true, quantity: null` | Chemical/pesticide name NOT invented. Kept empty with clarification prompt | **Passed** |
-| **TEST-DATE-01** | AFH-008 | Local Date Calculation | Call `getLocalDateString()` | Returns `YYYY-MM-DD` in local timezone, matching calendar day | Matches local calendar date; no UTC midnight drift | **Passed** |
-| **TEST-RESET-01**| AFH-009 | Safe Reset Cancellation | Click Reset, then click Cancel in modal | Modal closes, zero records deleted, state intact | Data completely untouched on Cancel | **Passed** |
-| **TEST-RESET-02**| AFH-009 | Safe Reset Confirmation | Click Reset, click Confirm in modal | Farmer-created records cleared, baseline demo data intact | Farmer records cleared; demo records preserved; storage updated | **Passed** |
-| **TEST-STATUS-01**| AFH-010 | Honest Simulation Disclosure | Inspect `OfflineStatusIndicator` & `MarketScreen` | Indicators state local memory simulation; no fake "cloud backup" | Shows "Local browser memory active" and "DEMO MARKET DATA — NOT LIVE" | **Passed** |
+| **TEST-BUILD-01** | Repository Integrity | TypeScript Typecheck | `npm run lint` (`tsc --noEmit`) | 0 TypeScript diagnostic errors | Exited with code 0, 0 errors | **Tested—Passed** |
+| **TEST-BUILD-02** | Repository Integrity | Production Vite Build | `npm run build` (`vite build`) | Successful output in `dist/` | Build succeeded, zero asset errors | **Tested—Passed** |
+| **TEST-REG-01** | Defect 1: Provenance | Source Preservation on Confirm | Call `confirmRecord` on event with `source: 'ai_extracted'` | `status` becomes `farmer_confirmed`; `source` remains `ai_extracted`; `verificationStatus` remains `pending` | `source` retained as `ai_extracted`, verification unchanged | **Tested—Passed** |
+| **TEST-REG-02** | Defect 1: Provenance | Correction History Tracking | Call `updateRecord` sequentially on quantity and title | Each change appends item to `correctionHistory` with old/new values | `correctionHistory` length is 2; fields accurately tracked | **Tested—Passed** |
+| **TEST-REG-03** | Defect 1: Provenance | Baseline Demo Immutability | Attempt `deleteRecord` on demo ID `DEMO-EVT-01` | Returns `success: false, code: 'NOT_FOUND'` | Rejection with `NOT_FOUND` error; demo data untouched | **Tested—Passed** |
+| **TEST-REG-04** | Defect 2 & 3: Reset | Successful Records Reset | Call `resetAllFarmerRecords` with existing user records | Clears user records from storage key; returns `success: true` | `data.length === 0`, `success: true` | **Tested—Passed** |
+| **TEST-REG-05** | Defect 2 & 3: Reset | Storage Write Failure on Reset | Force storage error on `resetAllFarmerRecords` | Returns `success: false` with explicit error string | `success: false`, error string returned; no false success | **Tested—Passed** |
+| **TEST-REG-06** | Defect 4: Localization | Dictionary Section Parity | Inspect `TRANSLATIONS` for Telugu, English, Hindi | All 11 major dictionary sections exist in each language | All sections present in TE, EN, HI | **Tested—Passed** |
+| **TEST-REG-07** | Defect 4: Localization | Profile Label Coverage | Inspect `preferencesModal` across all 3 languages | All 10 profile labels, notices, and options present | Full key parity across all 3 languages | **Tested—Passed** |
+| **TEST-REG-08** | Defect 4: Localization | Sample Insight Strings | Inspect `insights` across all 3 languages | `sampleInsightTitle`, `sampleInsightDetail`, `sampleInsightRecommendation` exist | Valid translations in TE, EN, HI | **Tested—Passed** |
+| **TEST-REG-09** | Defect 5: Voice/Date | Local Timezone Date String | Call `getLocalDateString(new Date())` | Output matches local calendar format `YYYY-MM-DD` | Returns local calendar format; no UTC drift | **Tested—Passed** |
+| **TEST-REG-10** | Defect 5: Voice/Date | Anti-Invention: Generic Fertilizer | Transcript: "రెండు ఎకరాలలో ఎరువు వేశాను" | `fertilizerName: null`, question in `needsClarification` | Zero invented chemical names; null preserved | **Tested—Passed** |
+| **TEST-REG-11** | Defect 5: Voice/Date | Explicit Chemical Recognition | Transcript: "ప్లాట్ A లో 50 కిలోల యూరియా వేశాను" | `fertilizerName: 'Urea'`, `quantity: 50`, `plotId: 'plot-a'` | Urea, 50kg, and Plot A recognized accurately | **Tested—Passed** |
+| **TEST-REG-12** | Defect 5: Voice/Date | Date Not Spoken Review Flag | Transcript: "వరి పొలంలో నీళ్లు పెట్టాను" | `isDateAssigned: true`, question in `needsClarification` | `isDateAssigned: true` flagged for farmer review | **Tested—Passed** |
+| **TEST-REG-13** | Defect 5: Voice/Date | Spoken "Yesterday" Recognition | Transcript: "నిన్న వరి పొలంలో నీళ్లు పెట్టాను" | `isDateAssigned: false`, date set to yesterday's local date | Yesterday parsed; `isDateAssigned: false` | **Tested—Passed** |
+| **TEST-REG-14** | Defect 5: Voice/Date | Spoken Correction Phrases | Transcript: "40 కాదు, 20 కిలోలు యూరియా" | `isCorrection: true`, `quantity: 20` | Adopts corrected quantity (20) | **Tested—Passed** |
+| **TEST-REG-15** | Defect 5: Voice/Date | Rule-Based Attribution | Inspect `extractionEngine` on extracted draft | Property is `'rule_based'` (never claims generative AI) | `extractionEngine === 'rule_based'` | **Tested—Passed** |
 
 ---
 
-## 2. Planned Future Tests (Deferred to Phase 1.0+)
+## 2. Screen-by-Screen UI Localization Checklist
 
-| Test ID | Scope | Planned Feature | Dependency |
-| :--- | :--- | :--- | :--- |
-| **TEST-PWA-01** | PWA Service Worker | Offline asset caching & background sync | Phase 1.0 PWA setup |
-| **TEST-AI-01** | Generative AI Advisory | Gemini API multimodal crop question answering | Phase 1.5 Gemini SDK integration |
-| **TEST-MANDI-01** | Live Mandi Feeds | Real-time APMC e-NAM API price ingestion | Phase 2.0 Gov API access |
+Verified across Telugu (తెలుగు), English, and Hindi (हिन्दी):
+
+### 1. Navigation & Header (`TopBar.tsx`, `BottomNavigation.tsx`)
+- [x] App Name and Phase Badge (`t.appName`, `t.phaseBadge`)
+- [x] Tab Labels: Home, My Farm, Record, Insights, Market (`t.nav.*`)
+- [x] Quick Action Button: Record (`t.actions.record`)
+- [x] Sync & Storage State Indicator: Online, Offline, Pending, Simulation disclosure (`t.sync.*`)
+- [x] HTML Document Lang synchronization (`<html lang="te|en|hi">`)
+
+### 2. Home Screen (`HomeScreen.tsx`)
+- [x] Greeting & Sub-greeting (`t.home.greeting`, `t.home.subGreeting`)
+- [x] Holding Area & Plot breakdown (`{farm.totalAreaAcres} ఎకరాలు / एकड़ / Acres`)
+- [x] Objectives Tags: Localized via `getObjectiveLabel` (`t.preferencesModal.obj*`)
+- [x] Weather Snapshot Card: Condition, Humidity, Wind, Mock disclosure (`t.home.weather*`)
+- [x] Plot Status Card: Plot names, areas, crop stages (`t.home.fieldStatusTitle`, `t.home.crop*`)
+- [x] Pending Action Card: Land prep reminder (`t.home.pendingTasksTitle`, `t.home.landPrepPending`)
+- [x] Hero Sample Insight Card: Title, detail, recommendation prompt, demo badge (`t.insights.*`)
+- [x] Recent Timeline Snapshot: Title, subtitle, view all records button (`t.home.recentTimeline*`)
+
+### 3. My Farm Screen (`MyFarmScreen.tsx`)
+- [x] Farm Overview Header: Total acres, manager greeting, soil test status, irrigation source (`t.myFarm.*`)
+- [x] Plot Selector Bar: Plot cards, area with localized units, crop stage, trust indicators (`t.myFarm.*`)
+- [x] Plot Specification Grid: Soil type, water source, sowing variety, yield targets (`t.myFarm.*`)
+- [x] Plot Activity Timeline: Header, count, embedded timeline component (`t.myFarm.recordedEventsFor`)
+
+### 4. Record Activity Screen (`RecordScreen.tsx`)
+- [x] Mode Switcher: Voice, Form, Quick 1-tap (`t.record.*`)
+- [x] Voice Recording Panel: Microphone permission alerts, listening prompts, language notes (`t.record.voice.*`)
+- [x] Extracted Draft Review: Entity fields, clarification questions, explicit confirmation buttons (`t.record.*`)
+- [x] Manual Detailed Form: Title, plot select, date, quantity, units, notes, submit (`t.record.form.*`)
+- [x] 1-Tap Quick Action Grid: Irrigation, spray, fertilizer, weeding quick actions (`t.record.quick.*`)
+- [x] Localized Save Feedback: Multilingual success and failure messages in TE, EN, HI
+
+### 5. Farm Insights Screen (`InsightsScreen.tsx`)
+- [x] Screen Header: Subtitle, title, tagline, demo badge, grounded notice (`t.insights.*`)
+- [x] Policy & Style Indicators: Localized recommendation mode & AI style (`t.preferencesModal.*`)
+- [x] Observation Narrative: Observation number, localized sample title, context title, detail (`t.insights.*`)
+- [x] Primary Objectives Alignment: Objective labels localized via `getObjectiveLabel`
+- [x] Farmer Decision Panel: "You Decide" prompt, acknowledge button, record button, decision note (`t.insights.*`)
+
+### 6. Mandi Market Screen (`MarketScreen.tsx`)
+- [x] Mandatory Commercial Safety Banner: Title, badge, warning explanation (`t.market.commercialBanner*`)
+- [x] Header: Readiness label, title, subtitle (`t.market.*`)
+- [x] Registered Crops: Stage, estimated harvest unrecorded note, localized acreage units (`t.market.*`)
+- [x] Mandi Price Benchmarks: Minimum, modal, maximum price labels, per quintal, localized trend (`Rising` / `పెరుగుతోంది` / `बढ़ रहा है`) (`t.market.*`)
+
+### 7. Profile & Personalization Modal (`ProfileModal.tsx`)
+- [x] Tab Switcher: Application Preferences vs Farmer Profile (`t.preferencesModal.preferencesTab`, `profileTab`)
+- [x] Preferences Tab: App language, voice language, independent setting notice, interaction mode, AI response style, display section (theme, text size, contrast), read aloud, quiet hours, alerts and reminders (`t.preferencesModal.*`)
+- [x] Profile Tab: Demo farmer notice, full name, preferred name greeting, role, experience, digital comfort levels, location (village, district, state, country), primary objectives (`t.preferencesModal.*`)
+- [x] Modal Actions: Cancel, Save & Apply, dismiss error (`t.preferencesModal.*`, `t.actions.cancel`)
+
+### 8. Farm Timeline & Details Modal (`FarmTimeline.tsx`)
+- [x] Timeline Nodes: Date, plot, demo record badge (`t.timeline.demoBadge`), edit count (`t.timeline.editsCount`)
+- [x] Action Buttons: View Details, Edit, Delete, Confirm Record (`t.timeline.*`)
+- [x] Event Details Modal: Specifications grid (quantity, area, source, confirmation status, verification status) (`t.timeline.*`)
+- [x] Captured Voice Transcript: Displayed in modal when present with localized header
+- [x] Application-Assigned Date Notice: Displayed in modal when date was auto-assigned today for review
+- [x] Edit Record Modal: Title, audit notice, form labels, cancel, save (`t.timeline.*`)
+- [x] Delete Confirmation Dialog: Warning, local deletion notice, confirm, cancel (`t.timeline.*`)
+
+### 9. Common Modals & Fallbacks
+- [x] Safe Reset Modal (`App.tsx`): Warning, what is deleted, what is retained, success, error (`t.resetModal.*`)
+- [x] Quick Record Modal (`QuickRecordModal.tsx`): Plot, event type, date, title, quantity, unit, cost, saving (`t.quickRecordModal.*`)
+- [x] Offline Status Popup (`OfflineStatusIndicator.tsx`): Simulation badge, local memory note, states (`t.sync.*`)
+- [x] Empty State (`EmptyState.tsx`): Heading, description, action button (`t.emptyState.*`)
+- [x] Error State (`ErrorState.tsx`): Heading, description, retry button (`t.errorState.*`)
+
+---
+
+## 3. Environment & Execution Limitations
+
+1. **Git Version Control in Sandbox**:
+   - The AI Studio sandbox container environment is not initialized as a git repository (`fatal: not a git repository: .git`).
+   - All changes are applied directly to the filesystem workspace.
+2. **Headless Browser Constraints**:
+   - Headless CLI environment lacks physical audio hardware / microphone devices for interactive audio capture.
+   - Speech synthesis and speech recognition runtime behaviors are verified via deterministic service unit tests and mock event structures.

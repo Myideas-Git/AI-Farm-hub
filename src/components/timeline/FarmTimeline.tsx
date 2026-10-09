@@ -181,7 +181,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
               }`}
             >
-              All Records ({events.length})
+              {t.timeline.filterAll} ({events.length})
             </button>
             <button
               type="button"
@@ -192,7 +192,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
               }`}
             >
-              Farmer Records ({events.filter((e) => !e.isDemo).length})
+              {t.timeline.filterFarmer} ({events.filter((e) => !e.isDemo).length})
             </button>
             <button
               type="button"
@@ -203,7 +203,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
               }`}
             >
-              Demo Records (5)
+              {t.timeline.filterDemo} (5)
             </button>
           </div>
         </div>
@@ -216,13 +216,13 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
             className="px-2.5 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-slate-700 dark:text-slate-200 focus:outline-hidden"
             aria-label="Filter by Plot"
           >
-            <option value="all">All Plots (Plot A & B)</option>
+            <option value="all">{t.timeline.allPlots}</option>
             {plots.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
               </option>
             ))}
-            <option value="unassigned">Plot Not Specified</option>
+            <option value="unassigned">{t.timeline.unassignedPlot}</option>
           </select>
 
           {/* Event type select */}
@@ -232,7 +232,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
             className="px-2.5 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-slate-700 dark:text-slate-200 focus:outline-hidden"
             aria-label="Filter by Event Type"
           >
-            <option value="all">All Activity Types</option>
+            <option value="all">{t.timeline.allTypes}</option>
             <option value="land_prep">Land Preparation</option>
             <option value="sowing">Seed Sowing</option>
             <option value="irrigation">Irrigation</option>
@@ -290,13 +290,13 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
                       </span>
                       {evt.isDemo && (
                         <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-sky-100 dark:bg-sky-950 text-sky-800 dark:text-sky-300 font-bold border border-sky-200 dark:border-sky-800">
-                          DEMO RECORD
+                          {t.timeline.demoBadge}
                         </span>
                       )}
                       {evt.correctionHistory && evt.correctionHistory.length > 0 && (
                         <span className="inline-flex items-center gap-0.5 text-[10px] text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.2 rounded border border-amber-200 dark:border-amber-800">
                           <History className="w-2.5 h-2.5" />
-                          <span>{evt.correctionHistory.length} edit(s)</span>
+                          <span>{evt.correctionHistory.length} {t.timeline.editsCount}</span>
                         </span>
                       )}
                     </div>
@@ -323,7 +323,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
                         {evt.quantity} {evt.unit || ''}
                       </div>
                     ) : (
-                      <div className="text-[11px] text-slate-400 italic">Qty: Unknown</div>
+                      <div className="text-[11px] text-slate-400 italic">{t.timeline.unknownNotRecorded}</div>
                     )}
 
                     {/* Pending Confirmation Action Button */}
@@ -337,7 +337,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
                         className="mt-2 inline-flex items-center gap-1 px-2.5 py-1 text-xs font-bold bg-emerald-800 hover:bg-emerald-900 text-white rounded-md transition-colors min-h-[32px] shadow-xs"
                       >
                         <CheckCircle2 className="w-3.5 h-3.5" />
-                        <span>Confirm Record</span>
+                        <span>{t.timeline.farmerConfirmSave}</span>
                       </button>
                     )}
                   </div>
@@ -353,7 +353,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
                       onClick={() => setActiveModalEvent(evt)}
                       className="text-slate-500 hover:text-slate-900 dark:hover:text-slate-200 text-[11px] font-medium"
                     >
-                      View Details
+                      {t.timeline.viewDetails}
                     </button>
                     {!evt.isDemo && onEditEvent && (
                       <button
@@ -362,7 +362,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
                         className="text-emerald-800 dark:text-emerald-400 hover:underline text-[11px] font-medium flex items-center gap-0.5"
                       >
                         <Edit2 className="w-3 h-3" />
-                        <span>Edit</span>
+                        <span>{t.timeline.edit}</span>
                       </button>
                     )}
                     {!evt.isDemo && onDeleteEvent && (
@@ -372,7 +372,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
                         className="text-rose-700 hover:text-rose-900 text-[11px] font-medium flex items-center gap-0.5"
                       >
                         <Trash2 className="w-3 h-3" />
-                        <span>Delete</span>
+                        <span>{t.timeline.delete}</span>
                       </button>
                     )}
                   </div>
@@ -394,10 +394,10 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
             <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 mb-4">
               <div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                  Edit Activity Record
+                  {t.timeline.editModalTitle}
                 </h3>
                 <span className="text-[11px] text-slate-400">
-                  Changes are tracked in correction audit history.
+                  {t.timeline.saveChangesHistory}
                 </span>
               </div>
               <button
@@ -412,7 +412,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
             <form onSubmit={handleSaveEdit} className="space-y-3.5 text-xs">
               <div>
                 <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Activity Title *
+                  {t.timeline.activityTitleLabel}
                 </label>
                 <input
                   type="text"
@@ -426,14 +426,14 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Plot
+                    {t.timeline.plotLabel}
                   </label>
                   <select
                     value={editPlotId || ''}
                     onChange={(e) => setEditPlotId(e.target.value || null)}
                     className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100"
                   >
-                    <option value="">Not specified</option>
+                    <option value="">{t.timeline.unassignedPlot}</option>
                     {plots.map((p) => (
                       <option key={p.id} value={p.id}>
                         {p.name}
@@ -444,7 +444,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
 
                 <div>
                   <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Activity Date
+                    {t.timeline.dateLabel}
                   </label>
                   <input
                     type="date"
@@ -458,7 +458,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Recorded Quantity
+                    {t.timeline.recordedQuantityLabel}
                   </label>
                   <input
                     type="number"
@@ -471,7 +471,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
                 </div>
                 <div>
                   <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Unit
+                    {t.timeline.unitLabel}
                   </label>
                   <input
                     type="text"
@@ -485,7 +485,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
 
               <div>
                 <label className="block font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Description / Notes
+                  {t.timeline.notesLabel}
                 </label>
                 <textarea
                   rows={2}
@@ -501,13 +501,13 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
                   onClick={() => setEditingEvent(null)}
                   className="px-3.5 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium"
                 >
-                  Cancel
+                  {t.timeline.cancel}
                 </button>
                 <button
                   type="submit"
                   className="px-4 py-2 rounded-lg bg-emerald-800 text-white font-bold hover:bg-emerald-900 transition-colors shadow-xs"
                 >
-                  Save Changes & Record History
+                  {t.timeline.saveChangesHistory}
                 </button>
               </div>
             </form>
@@ -521,18 +521,18 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
           className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-fade-in"
           role="dialog"
           aria-modal="true"
-          aria-label="Confirm Deletion"
+          aria-label={t.timeline.deleteConfirmTitle}
         >
           <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-sm w-full p-5 sm:p-6 shadow-xl border border-slate-200 dark:border-slate-800 text-xs space-y-3.5">
             <div className="flex items-center gap-2 text-rose-700 dark:text-rose-400 font-bold text-sm">
               <AlertTriangle className="w-4 h-4 shrink-0" />
-              <span>Delete Activity Record?</span>
+              <span>{t.timeline.deleteConfirmTitle}</span>
             </div>
             <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
-              Are you sure you want to remove &ldquo;<strong>{eventToDelete.title}</strong>&rdquo; from your farm records?
+              {t.timeline.deleteConfirmText} &ldquo;<strong>{eventToDelete.title}</strong>&rdquo;
             </p>
             <p className="text-[11px] text-slate-400">
-              This action only affects your local device memory and can be reset anytime using Demo Reset.
+              {t.timeline.deleteLocalNotice}
             </p>
             <div className="flex justify-end gap-2 pt-2">
               <button
@@ -540,7 +540,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
                 onClick={() => setEventToDelete(null)}
                 className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium hover:bg-slate-200"
               >
-                Cancel
+                {t.timeline.cancel}
               </button>
               <button
                 type="button"
@@ -553,7 +553,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
                 }}
                 className="px-3.5 py-1.5 rounded-lg bg-rose-700 text-white font-bold hover:bg-rose-800 transition-colors"
               >
-                Confirm Delete
+                {t.timeline.confirmDelete}
               </button>
             </div>
           </div>
@@ -579,7 +579,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
                 </div>
                 <div>
                   <span className="text-[11px] text-slate-500 uppercase tracking-wider font-semibold block">
-                    {activeModalEvent.isDemo ? 'DEMO ACTIVITY RECORD' : 'FARM ACTIVITY RECORD'}
+                    {activeModalEvent.isDemo ? t.timeline.demoRecordTitle : t.timeline.farmerRecordTitle}
                   </span>
                   <span className="text-xs text-slate-600 dark:text-slate-400 font-mono">
                     ID: {activeModalEvent.eventId}
@@ -604,7 +604,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
               <span>{formatDate(activeModalEvent.activityDate)}</span>
               <span aria-hidden="true">·</span>
               <span className="font-medium text-slate-800 dark:text-slate-200">
-                {activeModalEvent.plotName || 'Plot: Not specified'}
+                {activeModalEvent.plotName || t.timeline.unassignedPlot}
               </span>
               <span aria-hidden="true">·</span>
               <span>{activeModalEvent.cropName}</span>
@@ -616,34 +616,72 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
               </div>
             )}
 
+            {activeModalEvent.rawTranscript && (
+              <div className="p-3 bg-sky-50 dark:bg-sky-950/40 rounded-lg text-xs mb-4 border border-sky-200 dark:border-sky-800">
+                <span className="font-semibold text-sky-900 dark:text-sky-200 block text-[11px] mb-1">
+                  {language === 'Telugu'
+                    ? 'రికార్డ్ చేసిన వాయిస్ వివరాలు:'
+                    : language === 'Hindi'
+                    ? 'रिकॉर्ड किया गया वॉइस विवरण:'
+                    : 'Captured Voice Transcript:'}
+                </span>
+                <p className="italic text-slate-700 dark:text-slate-300">"{activeModalEvent.rawTranscript}"</p>
+              </div>
+            )}
+
+            {activeModalEvent.isDateAssigned && (
+              <div className="p-2.5 bg-amber-50 dark:bg-amber-950/40 rounded-lg text-xs mb-4 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200">
+                <span className="font-bold">
+                  {language === 'Telugu'
+                    ? 'గమనిక: '
+                    : language === 'Hindi'
+                    ? 'सूचना: '
+                    : 'Notice: '}
+                </span>
+                {language === 'Telugu'
+                  ? 'ఈ పనికి తేదీ నిర్దిష్టంగా మాట్లాడబడలేదు. సమీక్ష కోసం ఈరోజు తేదీని కేటాయించాము.'
+                  : language === 'Hindi'
+                  ? 'इस कार्य के लिए तारीख बोली नहीं गई थी। समीक्षा के लिए आज की तारीख नियत की गई है।'
+                  : 'Activity date was not spoken in voice input. Assigned today for your review.'}
+              </div>
+            )}
+
             {/* Structured Specifications Grid */}
             <div className="grid grid-cols-2 gap-3 text-xs mb-4">
               <div className="p-2.5 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg">
-                <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Quantity</span>
+                <span className="text-slate-500 dark:text-slate-400 block text-[11px]">{t.timeline.quantity}</span>
                 <span className="font-semibold text-slate-900 dark:text-slate-100 tabular-nums">
                   {activeModalEvent.quantity !== null && activeModalEvent.quantity !== undefined
                     ? `${activeModalEvent.quantity} ${activeModalEvent.unit || ''}`
-                    : 'Unknown / Not recorded'}
+                    : t.timeline.unknownNotRecorded}
                 </span>
               </div>
               <div className="p-2.5 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg">
-                <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Area Covered</span>
+                <span className="text-slate-500 dark:text-slate-400 block text-[11px]">{t.timeline.areaCovered}</span>
                 <span className="font-semibold text-slate-900 dark:text-slate-100">
                   {activeModalEvent.areaCoveredAcres !== null && activeModalEvent.areaCoveredAcres !== undefined
-                    ? `${activeModalEvent.areaCoveredAcres} Acres`
-                    : 'Unknown'}
+                    ? `${activeModalEvent.areaCoveredAcres} ${t.timeline.acresUnit}`
+                    : t.timeline.unknownNotRecorded}
                 </span>
               </div>
               <div className="p-2.5 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg">
-                <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Data Source</span>
+                <span className="text-slate-500 dark:text-slate-400 block text-[11px]">{t.timeline.dataSource}</span>
                 <span className="font-semibold text-slate-900 dark:text-slate-100 capitalize">
-                  {activeModalEvent.source.replace('_', ' ')}
+                  {t.sources[activeModalEvent.source] || activeModalEvent.source.replace('_', ' ')}
                 </span>
               </div>
               <div className="p-2.5 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg">
-                <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Verification Status</span>
+                <span className="text-slate-500 dark:text-slate-400 block text-[11px]">{t.timeline.confirmationStatus}</span>
                 <span className="font-semibold text-slate-900 dark:text-slate-100">
-                  {activeModalEvent.status.replace('_', ' ')}
+                  {t.statuses[activeModalEvent.status] || activeModalEvent.status.replace('_', ' ')}
+                </span>
+              </div>
+              <div className="p-2.5 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg col-span-2">
+                <span className="text-slate-500 dark:text-slate-400 block text-[11px]">{t.timeline.verificationStatus}</span>
+                <span className="font-semibold text-slate-900 dark:text-slate-100">
+                  {activeModalEvent.verificationStatus === 'confirmed'
+                    ? t.timeline.independentlyVerified
+                    : t.timeline.unverified}
                 </span>
               </div>
             </div>
@@ -653,7 +691,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
               <div className="p-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-lg mb-4 text-xs space-y-2">
                 <div className="flex items-center gap-1.5 font-bold text-amber-900 dark:text-amber-200 text-xs">
                   <History className="w-3.5 h-3.5" />
-                  <span>Correction History ({activeModalEvent.correctionHistory.length} edits)</span>
+                  <span>{t.timeline.correctionHistory} ({activeModalEvent.correctionHistory.length} {t.timeline.editsCount})</span>
                 </div>
                 <div className="space-y-1.5">
                   {activeModalEvent.correctionHistory.map((item) => (
@@ -683,7 +721,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
                   }}
                   className="px-4 py-2 bg-emerald-800 text-white font-bold rounded-lg text-xs"
                 >
-                  Farmer Confirm & Save
+                  {t.timeline.farmerConfirmSave}
                 </button>
               )}
               <div className="ml-auto flex gap-2">
@@ -692,7 +730,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
                   onClick={() => setActiveModalEvent(null)}
                   className="px-4 py-2 text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg"
                 >
-                  Close
+                  {t.timeline.close}
                 </button>
               </div>
             </div>

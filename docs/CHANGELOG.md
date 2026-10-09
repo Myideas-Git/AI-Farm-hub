@@ -4,69 +4,74 @@ All notable changes to the AI Farm Hub project are documented in this file.
 
 ---
 
-## [Phase 0.5 — Iteration 1] - 2026-10-09
+## [Phase 0.5 — Iteration 1.2: Defect Closure] - 2026-10-09
 
 ### Summary of Changes
-- **Fix A — Reliable Farm Activity Saving & Storage Error Handling**:
-  - Implemented `StorageResult<T>` and `LoadResult<T>` in `src/services/activityStorage.ts`.
-  - Added corrupted storage quarantine (`farm_intel_corrupt_backup_*`), preventing accidental loss or silent empty-history masking.
-  - Added `QuotaExceededError` detection and offline fallback handling.
-  - Prevented duplicate accidental double submissions within 30 seconds with warning prompt.
-  - Updated `App.tsx`, `RecordScreen.tsx`, and `QuickRecordModal.tsx` to verify return values before updating state or displaying success notifications; preserved entered form data on failure for retry.
-  - Scrubbed sensitive farmer data from browser console logs.
-- **Fix B — Correct Record Provenance and Identity**:
-  - Enforced strict provenance rules: manual entry in form or 1-tap quick action is classified as `source: 'farmer_reported'` and `status: 'pending_confirmation'`, `verificationStatus: 'pending'`.
-  - Disallowed automatic marking of new records as `farmer_confirmed` or independently verified.
-  - Preserved correction history in `correctionHistory` during edits without upgrading provenance.
-  - Updated all references to active demo farmer `farmer-ravi-01` (Ravi Kumar) and farm `farm-ravi-01`. Removed legacy `farmer-01` / `farm-01`.
-- **Fix C — Complete English, Telugu, and Hindi UI Translations**:
-  - Expanded `src/i18n/translations.ts` with comprehensive Telugu, Hindi, and English dictionaries covering TopBar, BottomNav, Quick modal, reset modal, market simulation, trust badges, and error states.
-  - Implemented safe fallback helper `getTranslations(lang)` ensuring missing keys fall back to English without crashing or showing raw keys.
-  - Added dynamic document metadata synchronization updating `<html lang>` attribute (`te`, `en`, `hi`).
-  - Localized `TrustIndicator.tsx`, `OfflineStatusIndicator.tsx`, `MarketScreen.tsx`, `QuickRecordModal.tsx`, `TopBar.tsx`, and `BottomNavigation.tsx`.
-- **Fix D — Correct Voice Extraction & Prevent Invented Values**:
-  - Re-architected `src/services/voiceExtractor.ts` to strictly rule-based parsing with honest architectural attribution ("Rule-based extraction (Generative AI not connected in Phase 0.5)").
-  - Eliminated hardcoded fallback defaults (`qty || 40`, `fertilizerName: 'Urea'`, `area || 2.0`). Missing entities remain `null` with explicit `needsClarification` prompts.
-  - Implemented `getLocalDateString()` for timezone-safe calendar date assignment, eliminating UTC ISO split day drift.
-- **Fix E — Safe Reset and Preference Persistence**:
-  - Added two-step confirmation dialog before any destructive reset action in `src/App.tsx`.
-  - Clearly explains what is removed (new farmer records) and what is retained (baseline demo records and plots).
-  - Cancel action safely preserves state without side effects.
-- **Fix F — Honest Offline, Sync, and Market Status**:
-  - Refactored `OfflineStatusIndicator.tsx` to state "Local browser memory active" and "Simulated Sync Queue"; removed deceptive "Cloud synced" and "All records backed up" claims.
-  - Reinforced visible safety banners in `MarketScreen.tsx` marking mandi prices as simulated benchmarks for Phase 0.5 testing.
-- **Fix G — Project Documentation**:
-  - Created `README.md`, `docs/PRODUCT_MASTER_SPEC.md`, `docs/REQUIREMENTS_TRACKER.md`, `docs/TEST_REGISTER.md`, and `docs/CHANGELOG.md`.
-- **Fix H — Automated Checks & Validation**:
-  - Ran `npm run lint` (`tsc --noEmit`) — passed with 0 errors.
-  - Ran `npm run build` (`vite build`) — passed with clean production output.
+- **Defect 1: Confirmation, Verification, and Provenance Semantics**:
+  - Maintained strict three-dimensional orthogonal model: Capture Source (`source`), Lifecycle Confirmation Status (`status`), and Third-Party Verification (`verificationStatus`).
+  - Confirmed records strictly preserve original capture source (`ai_extracted`, `farmer_reported`, etc.).
+  - Farmer confirmation sets `status: 'farmer_confirmed'` with `confirmedBy` and `confirmedAt`, but does NOT elevate `verificationStatus` (independent verification requires third-party certification).
+  - Voice record creation removes all fixed confidence values (e.g. 0.95); confidence is populated dynamically from browser speech recognition or left undefined.
+  - Edits append to `correctionHistory` without overwriting historical provenance.
+  - Added automated regression tests for confirmation, provenance, and history preservation.
+- **Defect 2: Profile & Preference Save Resilience**:
+  - React state in `src/App.tsx` is updated only after confirmed local-storage persistence.
+  - Failed writes return explicit error feedback (`QuotaExceededError` or general storage failure), keeping `ProfileModal` open and preserving draft form inputs for user retry.
+  - Ensured sensitive farmer data is never logged to browser console or telemetry.
+- **Defect 3: Safe Confirmed Reset & Partial Failure Reporting**:
+  - Enhanced `executeReset()` in `src/App.tsx` to verify every storage operation key (`records`, `profile`, `prefs`).
+  - Partial failures are reported accurately with specific error descriptions; UI never falsely claims complete reset or updates in-memory state on failed operations.
+  - Preserved baseline immutable demo data across all reset modes.
+- **Defect 4: Complete Multilingual Localization**:
+  - Fully localized Profile tab in `ProfileModal.tsx`: demo farmer notice, full name, greeting, role, experience, digital comfort levels, location inputs, primary objectives, and objective toggle labels.
+  - Localized `InsightsScreen.tsx`: demo sample title, context narrative, recommendation prompt, policy/style tags, and objective chips.
+  - Localized `HomeScreen.tsx`: holding area breakdown, plot area units, primary objectives chips, and demo insight card.
+  - Localized `MyFarmScreen.tsx`: plot acres units and crop label.
+  - Localized `MarketScreen.tsx`: registered crop acreage units and commodity price trend indicators (Rising/Falling/Stable).
+  - Localized `FarmTimeline.tsx`: demo badge, edit count, view details, edit, delete, confirm buttons, edit modal form fields, captured voice transcript note, and application-assigned date review notice.
+  - Localized `RecordScreen.tsx`: saved success feedback messages for voice, manual form, and quick 1-tap actions across Telugu, English, and Hindi.
+  - Created screen-by-screen localization checklist in `docs/TEST_REGISTER.md`.
+- **Defect 5: Deterministic Local Dates and Voice Extraction**:
+  - `VoiceExtractorService` returns local calendar date string (`YYYY-MM-DD`) via `getLocalDateString()`, preventing UTC boundary day shift.
+  - Anti-invention rules: generic "fertilizer" does not assume Urea or quantity; generic "medicine" does not assume pesticide name. Unmentioned fields remain `null` and generate `needsClarification` questions.
+  - Unspoken dates are explicitly flagged with `isDateAssigned: true` for farmer review.
+  - Extraction engine is explicitly labelled `'rule_based'`.
+  - Added automated regression tests for voice extraction and date calculation.
+- **Defect 6: Documentation and Evidence Alignment**:
+  - Updated `README.md`, `docs/PRODUCT_MASTER_SPEC.md`, `docs/REQUIREMENTS_TRACKER.md`, `docs/TEST_REGISTER.md`, and `docs/CHANGELOG.md`.
+  - Maintained honest reporting of environment limitations (git repository absence in container, headless audio constraints).
+  - Standardized requirement and test statuses.
 
 ### Files Affected
 - `src/types/farm.ts`
 - `src/services/activityStorage.ts`
 - `src/services/voiceExtractor.ts`
-- `src/i18n/translations.ts`
-- `src/components/common/QuickRecordModal.tsx`
-- `src/components/common/TrustIndicator.tsx`
-- `src/components/common/OfflineStatusIndicator.tsx`
-- `src/components/common/EmptyState.tsx`
-- `src/components/common/ErrorState.tsx`
-- `src/components/layout/TopBar.tsx`
-- `src/components/layout/BottomNavigation.tsx`
-- `src/components/screens/RecordScreen.tsx`
-- `src/components/screens/MarketScreen.tsx`
+- `src/components/profile/ProfileModal.tsx`
+- `src/components/screens/InsightsScreen.tsx`
 - `src/components/screens/HomeScreen.tsx`
 - `src/components/screens/MyFarmScreen.tsx`
-- `src/components/screens/InsightsScreen.tsx`
+- `src/components/screens/MarketScreen.tsx`
+- `src/components/screens/RecordScreen.tsx`
 - `src/components/timeline/FarmTimeline.tsx`
 - `src/App.tsx`
+- `src/tests/regression.test.ts`
+- `package.json`
 - `README.md`
 - `docs/PRODUCT_MASTER_SPEC.md`
 - `docs/REQUIREMENTS_TRACKER.md`
 - `docs/TEST_REGISTER.md`
 - `docs/CHANGELOG.md`
 
-### Known Limitations & Deferred Work
-- Real-time cloud sync and remote user accounts are deferred to Phase 1.0+.
-- Generative AI advisory agent and LLM-grounded question answering are deferred to Phase 1.5+.
-- Real APMC / e-NAM mandi API integration is deferred to Phase 2.0+.
+---
+
+## [Phase 0.5 — Iteration 1] - 2026-10-09
+
+### Summary of Changes
+- Fix A: Reliable Farm Activity Saving & Storage Error Handling
+- Fix B: Correct Record Provenance and Identity
+- Fix C: Complete English, Telugu, and Hindi UI Translations
+- Fix D: Correct Voice Extraction & Prevent Invented Values
+- Fix E: Safe Reset and Preference Persistence
+- Fix F: Honest Offline, Sync, and Market Status
+- Fix G: Initial Documentation Suite
+- Fix H: Build and Lint Validation

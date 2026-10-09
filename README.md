@@ -70,6 +70,9 @@ npm run dev
 # Run TypeScript typecheck / lint
 npm run lint
 
+# Run automated regression test suite
+npm test
+
 # Build production bundle
 npm run build
 
@@ -85,11 +88,12 @@ npm run preview
 2. **Local Storage Only (No Cloud Sync)**: All user activities, profile changes, and preferences are saved exclusively in browser `localStorage`. No cloud database or multi-device sync is connected.
 3. **Simulated Market Benchmarks**: Mandi prices and commodity trends are illustrative Phase 0.5 test data for Anakapalli crops. They do not represent live spot market prices or e-NAM feeds.
 4. **Browser Speech API Compatibility**: Voice recognition requires browsers supporting Web Speech API (e.g. Chrome, Edge, Safari). Mobile browsers with microphone restrictions gracefully fall back to structured manual form entry.
+5. **Sandbox Container Environment**: The development container runs without an initialized `.git` repository; code changes are applied directly to the project directory.
 
 ---
 
 ## 6. Current Release / Iteration Status
 
 - **Product Phase**: Phase 0.5 — Profile & Personalization Foundation
-- **Iteration**: Iteration 1 — Critical Fixes, Multilingual Completion & Reliability Hardening
-- **Gate Status**: READY FOR ACCEPTANCE
+- **Iteration**: Iteration 1.2 — Final Phase 0.5 Defect Closure
+- **Gate Status**: READY FOR REVIEW / READY FOR ACCEPTANCE

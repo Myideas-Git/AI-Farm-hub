@@ -184,16 +184,18 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
       areaCoveredAcres: extractedDraft.areaCoveredAcres,
       cost: null,
       currency: 'INR',
-      source: explicitlyConfirmed ? 'farmer_confirmed' : 'ai_extracted',
+      source: 'ai_extracted',
+      originalSource: 'ai_extracted',
       status: explicitlyConfirmed ? 'farmer_confirmed' : 'pending_confirmation',
-      verificationStatus: explicitlyConfirmed ? 'confirmed' : 'pending',
+      verificationStatus: 'pending', // Independent verification remains pending (farmer confirmation is not third-party verification)
       isDemo: false,
+      isDateAssigned: extractedDraft.isDateAssigned,
+      rawTranscript: extractedDraft.rawTranscript,
       evidence: {
         type: 'audio_note',
         label: `Voice dictate (${preferences.voiceLanguage})`,
         notes: extractedDraft.rawTranscript,
       },
-      confidence: 0.95,
       createdBy: 'Ravi Kumar (Farmer)',
       confirmedBy: explicitlyConfirmed ? 'Ravi Kumar' : undefined,
       confirmedAt: explicitlyConfirmed ? new Date().toISOString() : undefined,
@@ -207,11 +209,19 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
       return;
     }
 
-    setSavedSuccessMsg(
-      explicitlyConfirmed
-        ? `Farmer confirmed and saved: "${newEvt.title}"!`
-        : `Saved as pending confirmation: "${newEvt.title}".`
-    );
+    const successText = explicitlyConfirmed
+      ? (preferences.appLanguage === 'Telugu'
+          ? `రైతు నిర్ధారించి భద్రపరిచారు: "${newEvt.title}"!`
+          : preferences.appLanguage === 'Hindi'
+          ? `किसान द्वारा पुष्टि और सहेजा गया: "${newEvt.title}"!`
+          : `Farmer confirmed and saved: "${newEvt.title}"!`)
+      : (preferences.appLanguage === 'Telugu'
+          ? `నిర్ధారణ పెండింగ్‌లో భద్రపరచబడింది: "${newEvt.title}".`
+          : preferences.appLanguage === 'Hindi'
+          ? `पुष्टि लंबित के रूप में सहेजा गया: "${newEvt.title}".`
+          : `Saved as pending confirmation: "${newEvt.title}".`);
+
+    setSavedSuccessMsg(successText);
     if (preferences.readAloud) {
       const msg =
         preferences.appLanguage === 'Telugu'
@@ -260,6 +270,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
       currency: 'INR',
       // Strict Provenance: manually entered is farmer-reported and pending confirmation
       source: 'farmer_reported',
+      originalSource: 'farmer_reported',
       status: 'pending_confirmation',
       verificationStatus: 'pending',
       isDemo: false,
@@ -275,7 +286,13 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
       return;
     }
 
-    setSavedSuccessMsg(`Recorded "${newEvt.title}" into farm records (pending confirmation)!`);
+    const formSuccessText =
+      preferences.appLanguage === 'Telugu'
+        ? `వ్యవసాయ రికార్డుల్లో నమోదు చేయబడింది: "${newEvt.title}" (నిర్ధారణ పెండింగ్)!`
+        : preferences.appLanguage === 'Hindi'
+        ? `खेत रिकॉर्ड में दर्ज किया गया: "${newEvt.title}" (पुष्टि लंबित)!`
+        : `Recorded "${newEvt.title}" into farm records (pending confirmation)!`;
+    setSavedSuccessMsg(formSuccessText);
     setTimeout(() => setSavedSuccessMsg(null), 4000);
 
     // Reset fields only upon verified save
@@ -318,6 +335,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
       currency: 'INR',
       // Strict Provenance: quick tap is farmer-reported and pending confirmation
       source: 'farmer_reported',
+      originalSource: 'farmer_reported',
       status: 'pending_confirmation',
       verificationStatus: 'pending',
       isDemo: false,
@@ -333,7 +351,13 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
       return;
     }
 
-    setSavedSuccessMsg(`Quick log saved: "${title}" (pending confirmation)!`);
+    const quickSuccessText =
+      preferences.appLanguage === 'Telugu'
+        ? `త్వరిత పని నమోదు చేయబడింది: "${title}" (నిర్ధారణ పెండింగ్)!`
+        : preferences.appLanguage === 'Hindi'
+        ? `त्वरित कार्य दर्ज किया गया: "${title}" (पुष्टि लंबित)!`
+        : `Quick log saved: "${title}" (pending confirmation)!`;
+    setSavedSuccessMsg(quickSuccessText);
     setTimeout(() => setSavedSuccessMsg(null), 4000);
     setActiveTab('timeline');
   };
@@ -605,10 +629,10 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                 <div className="pt-4 border-t border-slate-200 dark:border-slate-700 text-left">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
-                      Section 6: Required Test Phrases (Telugu & Multilingual)
+                      {t.record.testPhrasesTitle}
                     </span>
                     <span className="text-[10px] font-mono text-slate-400">
-                      1-TAP ACCEPTANCE TEST RUNNERS
+                      {t.record.testPhrasesSubtitle}
                     </span>
                   </div>
 
@@ -777,7 +801,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                     <div>
                       <label className="block text-slate-600 dark:text-slate-400 font-semibold mb-1">
-                        Activity Headline
+                        {t.record.headlineLabel}
                       </label>
                       <input
                         type="text"
@@ -791,13 +815,22 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
 
                     <div>
                       <label className="block text-slate-600 dark:text-slate-400 font-semibold mb-1">
-                        Activity Date
+                        {t.record.activityDateLabel}
+                        {extractedDraft.isDateAssigned && (
+                          <span className="ml-1.5 text-[10px] font-normal text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/60 px-1.5 py-0.5 rounded border border-amber-200 dark:border-amber-800">
+                            {t.record.appAssignedDateNotice}
+                          </span>
+                        )}
                       </label>
                       <input
                         type="date"
                         value={extractedDraft.activityDate || ''}
                         onChange={(e) =>
-                          setExtractedDraft({ ...extractedDraft, activityDate: e.target.value })
+                          setExtractedDraft({
+                            ...extractedDraft,
+                            activityDate: e.target.value,
+                            isDateAssigned: false,
+                          })
                         }
                         className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white"
                       />
@@ -805,7 +838,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
 
                     <div>
                       <label className="block text-slate-600 dark:text-slate-400 font-semibold mb-1">
-                        Associated Plot *
+                        {t.record.associatedPlotLabel}
                       </label>
                       <select
                         value={extractedDraft.plotId || ''}
@@ -821,7 +854,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                         }}
                         className="w-full px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white"
                       >
-                        <option value="">Unknown / Not Clarified</option>
+                        <option value="">{t.record.unspecifiedPlot}</option>
                         {plots.map((p) => (
                           <option key={p.id} value={p.id}>
                             {p.name} ({p.areaAcres} Acres)
@@ -832,7 +865,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
 
                     <div>
                       <label className="block text-slate-600 dark:text-slate-400 font-semibold mb-1">
-                        Recorded Quantity
+                        {t.record.quantityRecorded}
                       </label>
                       <div className="flex gap-2">
                         <input
@@ -867,7 +900,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                       onClick={() => setExtractedDraft(null)}
                       className="px-3.5 py-2 text-xs font-medium text-slate-600 hover:text-slate-900"
                     >
-                      Discard Draft
+                      {t.record.discardDraft}
                     </button>
 
                     <div className="flex gap-2">
@@ -876,7 +909,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                         onClick={() => handleSaveExtractedDraft(false)}
                         className="px-3.5 py-2 text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-200 rounded-lg hover:bg-slate-50"
                       >
-                        Save as Pending
+                        {t.record.savePending}
                       </button>
 
                       <button
@@ -885,7 +918,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                         className="px-4 py-2 text-xs font-bold bg-emerald-800 text-white rounded-lg hover:bg-emerald-900 shadow-xs flex items-center gap-1.5"
                       >
                         <Check className="w-4 h-4" />
-                        <span>Farmer Confirm & Save</span>
+                        <span>{t.record.farmerConfirmSave}</span>
                       </button>
                     </div>
                   </div>
@@ -900,14 +933,14 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
               <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
                 <div>
                   <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                    Quick 1-Tap Loggers
+                    {t.record.quick1TapTitle}
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Log common field routines directly on Plot A or Plot B in 1 tap.
+                    {t.record.quick1TapSubtitle}
                   </p>
                 </div>
                 <span className="text-xs text-emerald-800 dark:text-emerald-400 font-semibold">
-                  Zero Form Friction
+                  {t.record.zeroFriction}
                 </span>
               </div>
 

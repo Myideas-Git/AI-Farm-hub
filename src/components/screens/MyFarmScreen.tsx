@@ -67,28 +67,28 @@ export const MyFarmScreen: React.FC<MyFarmScreenProps> = ({
               <span>{farm.village}, {farm.district}, {farm.state}</span>
               <span aria-hidden="true">·</span>
               <span className="font-semibold text-slate-800 dark:text-slate-200">
-                {farm.totalAreaAcres} Total Acres
+                {t.myFarm.totalAcresFormat}
               </span>
             </div>
             <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
               {farm.name}
             </h1>
             <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 mt-0.5">
-              Managed by {farmer.name} ({farmer.preferredName}) · 2 registered plots (5 Acres total).
+              {t.myFarm.managedByFormat}
             </p>
           </div>
 
           <div className="flex items-center gap-3">
             <div className="text-right">
-              <span className="text-xs text-slate-500 dark:text-slate-400 block">Soil Test Status</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400 block">{t.myFarm.soilTestStatus}</span>
               <span className="text-xs font-semibold text-amber-700 dark:text-amber-300">
-                Not Available (Unrecorded)
+                {t.myFarm.soilTestNotAvailable}
               </span>
             </div>
             <div className="text-right border-l border-slate-200 dark:border-slate-700 pl-3">
-              <span className="text-xs text-slate-500 dark:text-slate-400 block">Irrigation Source</span>
+              <span className="text-xs text-slate-500 dark:text-slate-400 block">{t.myFarm.irrigationSource}</span>
               <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">
-                Unknown
+                {t.myFarm.irrigationUnknown}
               </span>
             </div>
           </div>
@@ -101,7 +101,7 @@ export const MyFarmScreen: React.FC<MyFarmScreenProps> = ({
               {t.myFarm.plotsListTitle}
             </span>
             <span className="text-xs text-slate-500 dark:text-slate-400">
-              Total 5.0 Acres (Plot A: 2.0 Ac + Plot B: 3.0 Ac)
+              {t.myFarm.plotAcresTotal}
             </span>
           </div>
 
@@ -125,14 +125,14 @@ export const MyFarmScreen: React.FC<MyFarmScreenProps> = ({
                       {plot.name}
                     </span>
                     <span className="text-xs font-bold text-emerald-800 dark:text-emerald-400 tabular-nums">
-                      {plot.areaAcres} Acres
+                      {plot.areaAcres} {preferences?.appLanguage === 'Telugu' ? 'ఎకరాలు' : preferences?.appLanguage === 'Hindi' ? 'एकड़' : 'Acres'}
                     </span>
                   </div>
                   <div className="text-xs text-slate-600 dark:text-slate-300 font-medium">
-                    Crop: {plot.cropName}
+                    {preferences?.appLanguage === 'Telugu' ? 'పంట:' : preferences?.appLanguage === 'Hindi' ? 'फसल:' : 'Crop:'} {plot.cropName}
                   </div>
                   <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
-                    <span>Stage: Land preparation</span>
+                    <span>{t.myFarm.stageLandPrep}</span>
                     <TrustIndicator status="unknown" size="sm" language={preferences?.appLanguage || 'Telugu'} />
                   </div>
                 </button>
@@ -147,14 +147,16 @@ export const MyFarmScreen: React.FC<MyFarmScreenProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
           <div>
             <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-1">
-              <span>Farm Plot</span>
+              <span>{t.myFarm.farmPlotLabel}</span>
               <span aria-hidden="true">→</span>
               <span className="font-semibold text-slate-900 dark:text-white">{selectedPlot.name}</span>
               <span aria-hidden="true">→</span>
-              <span>{selectedPlot.areaAcres} Acres</span>
+              <span>
+                {selectedPlot.areaAcres} {preferences?.appLanguage === 'Telugu' ? 'ఎకరాలు' : preferences?.appLanguage === 'Hindi' ? 'एकड़' : 'Acres'}
+              </span>
             </div>
             <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
-              {selectedPlot.name} Field Specifications
+              {selectedPlot.name} {t.myFarm.fieldSpecsTitle}
             </h2>
           </div>
 
@@ -173,7 +175,7 @@ export const MyFarmScreen: React.FC<MyFarmScreenProps> = ({
           <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
             <span className="text-slate-500 dark:text-slate-400 text-[11px] block">{t.myFarm.soilType}</span>
             <span className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 block mt-0.5 italic">
-              Unknown / Unrecorded
+              {t.myFarm.soilTypeUnknown}
             </span>
             <div className="mt-1">
               <TrustIndicator status="unknown" size="sm" language={preferences?.appLanguage || 'Telugu'} />
@@ -186,27 +188,27 @@ export const MyFarmScreen: React.FC<MyFarmScreenProps> = ({
               {t.myFarm.irrigationUnknown}
             </span>
             <span className="text-[11px] text-slate-400 block mt-0.5">
-              Zero assumption rule
+              {t.myFarm.zeroAssumption}
             </span>
           </div>
 
           <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
-            <span className="text-slate-500 dark:text-slate-400 text-[11px] block">Sowing & Variety</span>
+            <span className="text-slate-500 dark:text-slate-400 text-[11px] block">{t.myFarm.sowingVariety}</span>
             <span className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 block mt-0.5 italic">
-              Variety: Unknown
+              {t.myFarm.varietyUnknown}
             </span>
             <span className="text-[10px] text-slate-400 block mt-0.5">
-              Sowing date: Not yet recorded
+              {t.myFarm.sowingDateUnrecorded}
             </span>
           </div>
 
           <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
-            <span className="text-slate-500 dark:text-slate-400 text-[11px] block">Yield Target / Actual</span>
+            <span className="text-slate-500 dark:text-slate-400 text-[11px] block">{t.myFarm.yieldTargetActual}</span>
             <span className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 block mt-0.5 italic">
-              Unknown
+              {t.myFarm.soilTypeUnknown}
             </span>
             <span className="text-[10px] text-slate-400 block mt-0.5">
-              Never converted to 0
+              {t.myFarm.neverConvertedToZero}
             </span>
           </div>
         </div>
@@ -215,10 +217,10 @@ export const MyFarmScreen: React.FC<MyFarmScreenProps> = ({
         <div className="pt-2">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-              Recorded Events for {selectedPlot.name} ({plotEvents.length})
+              {t.myFarm.recordedEventsFor} {selectedPlot.name} ({plotEvents.length})
             </h3>
             <span className="text-xs text-slate-500 dark:text-slate-400">
-              Showing field log
+              {t.myFarm.showingFieldLog}
             </span>
           </div>
 

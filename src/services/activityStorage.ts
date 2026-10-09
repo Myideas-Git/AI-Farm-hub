@@ -356,13 +356,14 @@ export class ActivityStorageService {
 
   /**
    * Confirms a record explicitly by the farmer.
+   * Strictly preserves the record's original capture source (e.g. ai_extracted, farmer_reported)
+   * and does NOT artificially elevate verificationStatus (independent verification).
    */
   public static confirmRecord(eventId: string, confirmedBy: string): StorageResult<FarmEvent> {
     return this.updateRecord(
       eventId,
       {
         status: 'farmer_confirmed',
-        source: 'farmer_confirmed',
         confirmedBy,
         confirmedAt: new Date().toISOString(),
       },
