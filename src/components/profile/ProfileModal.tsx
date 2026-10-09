@@ -1,36 +1,38 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   X,
   User,
   Sliders,
   Check,
   Sun,
-  Eye,
   Volume2,
   VolumeX,
-  Layers,
   Sparkles,
-  Shield,
   Save,
   CheckCircle2,
-  Languages,
-  Scale,
+  Moon,
+  Laptop,
   Bell,
-  Compass,
+  Clock,
+  Shield,
+  Layers,
 } from 'lucide-react';
 import {
   FarmerProfile,
   FarmerPreferences,
-  FarmerRole,
-  FarmerObjective,
+  AppLanguage,
+  VoiceInputLanguage,
   InteractionMode,
   AiResponseStyle,
-  RecommendationBehavior,
-  DisplayScale,
-  LandUnit,
-  WeightUnit,
+  RecommendationMode,
+  AppTheme,
+  TextSize,
+  InteractionPreference,
+  INITIAL_PROFILE,
+  INITIAL_PREFERENCES,
+  migratePreferences,
 } from '../../types/profile';
-import { ROLE_LABELS, OBJECTIVE_LABELS } from '../../data/mockProfileData';
+import { TRANSLATIONS } from '../../i18n/translations';
 
 interface ProfileModalProps {
   isOpen: boolean;
@@ -41,6 +43,29 @@ interface ProfileModalProps {
   onSavePreferences: (preferences: FarmerPreferences) => void;
 }
 
+const OBJECTIVE_OPTIONS = [
+  'Improve farming profitability',
+  'Reduce input costs',
+  'Improve crop yield',
+  'Save water',
+  'Maintain accurate farm records',
+];
+
+const ALERT_OPTIONS = [
+  'Severe weather',
+  'Crop health',
+  'Important farm alerts',
+  'Payment',
+  'Harvest',
+];
+
+const REMINDER_OPTIONS = [
+  'Irrigation',
+  'Planned activities',
+  'Market updates',
+  'Record reminders',
+];
+
 export const ProfileModal: React.FC<ProfileModalProps> = ({
   isOpen,
   onClose,
@@ -49,36 +74,100 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
   onSaveProfile,
   onSavePreferences,
 }) => {
-  const [activeTab, setActiveTab] = useState<'profile' | 'preferences'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'preferences'>('preferences');
 
-  // Local draft state
-  const [draftProfile, setDraftProfile] = useState<FarmerProfile>(profile);
-  const [draftPreferences, setDraftPreferences] = useState<FarmerPreferences>(preferences);
+  // Draft state with robust defaults and migration
+  const [draftProfile, setDraftProfile] = useState<FarmerProfile>(() => ({
+    ...INITIAL_PROFILE,
+    ...profile,
+    primaryObjectives: Array.isArray(profile?.primaryObjectives)
+      ? profile.primaryObjectives
+      : INITIAL_PROFILE.primaryObjectives,
+  }));
+  const [draftPreferences, setDraftPreferences] = useState<FarmerPreferences>(() =>
+    migratePreferences(preferences)
+  );
   const [saveSuccessMsg, setSaveSuccessMsg] = useState<string | null>(null);
+
+  // Sync draft states when modal opens or incoming props update
+  useEffect(() => {
+    if (isOpen) {
+      setDraftProfile({
+        ...INITIAL_PROFILE,
+        ...profile,
+        primaryObjectives: Array.isArray(profile?.primaryObjectives)
+          ? profile.primaryObjectives
+          : INITIAL_PROFILE.primaryObjectives,
+      });
+      setDraftPreferences(migratePreferences(preferences));
+    }
+  }, [isOpen, profile, preferences]);
 
   if (!isOpen) return null;
 
-  const handleObjectiveToggle = (obj: FarmerObjective) => {
+  const t = TRANSLATIONS[draftPreferences?.appLanguage] || TRANSLATIONS.Telugu;
+
+  const handleObjectiveToggle = (obj: string) => {
     setDraftProfile((prev) => {
-      const exists = prev.primaryObjectives.includes(obj);
-      if (exists) {
-        return {
-          ...prev,
-          primaryObjectives: prev.primaryObjectives.filter((o) => o !== obj),
-        };
-      } else {
-        return {
-          ...prev,
-          primaryObjectives: [...prev.primaryObjectives, obj],
-        };
-      }
+      const currentList = Array.isArray(prev?.primaryObjectives)
+        ? prev.primaryObjectives
+        : INITIAL_PROFILE.primaryObjectives;
+      const exists = currentList.includes(obj);
+      return {
+        ...prev,
+        primaryObjectives: exists
+          ? currentList.filter((o) => o !== obj)
+          : [...currentList, obj],
+      };
+    });
+  };
+
+  const handleAlertToggle = (alert: string) => {
+    setDraftPreferences((prev) => {
+      const currentAlerts =
+        prev?.notificationPreferences?.importantAlerts ??
+        INITIAL_PREFERENCES.notificationPreferences.importantAlerts;
+      const exists = currentAlerts.includes(alert);
+      return {
+        ...prev,
+        notificationPreferences: {
+          ...INITIAL_PREFERENCES.notificationPreferences,
+          ...prev?.notificationPreferences,
+          importantAlerts: exists
+            ? currentAlerts.filter((a) => a !== alert)
+            : [...currentAlerts, alert],
+        },
+      };
+    });
+  };
+
+  const handleReminderToggle = (reminder: string) => {
+    setDraftPreferences((prev) => {
+      const currentReminders =
+        prev?.notificationPreferences?.reminders ??
+        INITIAL_PREFERENCES.notificationPreferences.reminders;
+      const exists = currentReminders.includes(reminder);
+      return {
+        ...prev,
+        notificationPreferences: {
+          ...INITIAL_PREFERENCES.notificationPreferences,
+          ...prev?.notificationPreferences,
+          reminders: exists
+            ? currentReminders.filter((r) => r !== reminder)
+            : [...currentReminders, reminder],
+        },
+      };
     });
   };
 
   const handleSave = () => {
     onSaveProfile(draftProfile);
     onSavePreferences(draftPreferences);
-    setSaveSuccessMsg('Personalization settings saved and applied!');
+    setSaveSuccessMsg(
+      draftPreferences.appLanguage === 'Telugu'
+        ? 'ప్రొఫైల్ మరియు ప్రాధాన్యతలు విజయవంతంగా భద్రపరచబడ్డాయి!'
+        : 'Profile and preferences successfully saved and applied!'
+    );
     setTimeout(() => {
       setSaveSuccessMsg(null);
       onClose();
@@ -92,24 +181,24 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
       aria-modal="true"
       aria-label="Profile and Preferences"
     >
-      <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-2xl max-w-2xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
         {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-slate-200 flex items-center justify-between bg-slate-50/70">
+        <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50/80 dark:bg-slate-800/50">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-xl bg-emerald-800 text-white font-bold flex items-center justify-center text-sm shadow-xs shrink-0">
               {draftProfile.avatarInitials}
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-base sm:text-lg font-bold text-slate-900">
-                  {draftProfile.fullName}
+                <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                  {draftProfile.preferredName || draftProfile.fullName}
                 </h2>
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-semibold">
-                  PHASE 0.5
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 font-semibold">
+                  {t.phaseBadge}
                 </span>
               </div>
-              <p className="text-xs text-slate-500">
-                Personal identity & application interaction preferences
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {draftProfile.role} · {draftProfile.village}, {draftProfile.district}
               </p>
             </div>
           </div>
@@ -117,7 +206,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-200 transition-colors"
+            className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
             aria-label="Close dialog"
           >
             <X className="w-5 h-5" />
@@ -125,54 +214,419 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
         </div>
 
         {/* Tab Switcher: Profile vs Preferences */}
-        <div className="flex border-b border-slate-200 bg-white px-4 sm:px-6 pt-2">
-          <button
-            type="button"
-            onClick={() => setActiveTab('profile')}
-            className={`flex items-center gap-2 py-3 px-4 text-xs sm:text-sm font-semibold border-b-2 transition-colors min-h-[44px] ${
-              activeTab === 'profile'
-                ? 'border-emerald-800 text-emerald-900'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
-            }`}
-          >
-            <User className="w-4 h-4" />
-            <span>Farmer Profile ("Who am I?")</span>
-          </button>
+        <div className="flex border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 sm:px-6 pt-2">
           <button
             type="button"
             onClick={() => setActiveTab('preferences')}
             className={`flex items-center gap-2 py-3 px-4 text-xs sm:text-sm font-semibold border-b-2 transition-colors min-h-[44px] ${
               activeTab === 'preferences'
-                ? 'border-emerald-800 text-emerald-900'
-                : 'border-transparent text-slate-500 hover:text-slate-800'
+                ? 'border-emerald-800 text-emerald-900 dark:text-emerald-400 dark:border-emerald-500'
+                : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
             }`}
           >
             <Sliders className="w-4 h-4" />
-            <span>App Behavior ("How it behaves")</span>
+            <span>{t.preferencesModal.preferencesTab}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('profile')}
+            className={`flex items-center gap-2 py-3 px-4 text-xs sm:text-sm font-semibold border-b-2 transition-colors min-h-[44px] ${
+              activeTab === 'profile'
+                ? 'border-emerald-800 text-emerald-900 dark:text-emerald-400 dark:border-emerald-500'
+                : 'border-transparent text-slate-500 hover:text-slate-800 dark:hover:text-slate-300'
+            }`}
+          >
+            <User className="w-4 h-4" />
+            <span>{t.preferencesModal.profileTab}</span>
           </button>
         </div>
 
         {/* Scrollable Form Body */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
           {saveSuccessMsg && (
-            <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-900 text-xs font-semibold rounded-xl flex items-center gap-2 animate-fade-in">
-              <CheckCircle2 className="w-4 h-4 text-emerald-700 shrink-0" />
+            <div className="p-3 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 text-xs font-semibold rounded-xl flex items-center gap-2 animate-fade-in">
+              <CheckCircle2 className="w-4 h-4 text-emerald-700 dark:text-emerald-400 shrink-0" />
               <span>{saveSuccessMsg}</span>
             </div>
           )}
 
-          {/* TAB 1: FARMER PROFILE ("Who am I?") */}
+          {/* TAB 1: APPLICATION PREFERENCES */}
+          {activeTab === 'preferences' && (
+            <div className="space-y-6">
+              {/* App Language & Voice Language (Independent) */}
+              <div className="p-4 bg-slate-50/70 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
+                    Language Settings (Independent)
+                  </span>
+                  <span className="text-[11px] text-emerald-800 dark:text-emerald-400 font-medium">
+                    Telugu Default
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* App Language */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      {t.preferencesModal.appLanguageLabel} *
+                    </label>
+                    <select
+                      value={draftPreferences.appLanguage}
+                      onChange={(e) =>
+                        setDraftPreferences({
+                          ...draftPreferences,
+                          appLanguage: e.target.value as AppLanguage,
+                        })
+                      }
+                      className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 min-h-[40px]"
+                    >
+                      <option value="Telugu">Telugu (తెలుగు)</option>
+                      <option value="English">English</option>
+                      <option value="Hindi">Hindi (हिन्दी)</option>
+                    </select>
+                  </div>
+
+                  {/* Voice Language (Independent!) */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      {t.preferencesModal.voiceLanguageLabel} *
+                    </label>
+                    <select
+                      value={draftPreferences.voiceLanguage}
+                      onChange={(e) =>
+                        setDraftPreferences({
+                          ...draftPreferences,
+                          voiceLanguage: e.target.value as VoiceInputLanguage,
+                        })
+                      }
+                      className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 min-h-[40px]"
+                    >
+                      <option value="Telugu">Telugu (తెలుగు)</option>
+                      <option value="English">English</option>
+                      <option value="Hindi">Hindi (हिन्दी)</option>
+                    </select>
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 italic">
+                  {t.preferencesModal.translationNote}
+                </p>
+              </div>
+
+              {/* Interaction Mode & AI Response Style */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Interaction mode */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+                    {t.preferencesModal.interactionModeLabel}
+                  </label>
+                  <select
+                    value={draftPreferences.interactionMode}
+                    onChange={(e) =>
+                      setDraftPreferences({
+                        ...draftPreferences,
+                        interactionMode: e.target.value as InteractionMode,
+                      })
+                    }
+                    className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 min-h-[40px]"
+                  >
+                    <option value="Quick">Quick (Default — 1-tap rapid actions)</option>
+                    <option value="Assisted">Assisted (Step-by-step guidance)</option>
+                    <option value="Detailed">Detailed (Full forms and metadata)</option>
+                  </select>
+                </div>
+
+                {/* AI Response Style */}
+                <div>
+                  <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+                    {t.preferencesModal.aiResponseStyleLabel}
+                  </label>
+                  <select
+                    value={draftPreferences.aiResponseStyle}
+                    onChange={(e) =>
+                      setDraftPreferences({
+                        ...draftPreferences,
+                        aiResponseStyle: e.target.value as AiResponseStyle,
+                      })
+                    }
+                    className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 min-h-[40px]"
+                  >
+                    <option value="Simple">Simple (Clear, direct summaries)</option>
+                    <option value="Balanced">Balanced (Standard context)</option>
+                    <option value="Detailed">Detailed (Comprehensive agronomic rationale)</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Theme, Text Size, Contrast */}
+              <div className="p-4 bg-slate-50/70 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800 space-y-3">
+                <span className="text-xs font-bold text-slate-900 dark:text-slate-100 block">
+                  Display, Text Size & Contrast
+                </span>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  {/* Theme */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      {t.preferencesModal.themeLabel}
+                    </label>
+                    <select
+                      value={draftPreferences.theme}
+                      onChange={(e) =>
+                        setDraftPreferences({
+                          ...draftPreferences,
+                          theme: e.target.value as AppTheme,
+                        })
+                      }
+                      className="w-full px-2.5 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 min-h-[40px]"
+                    >
+                      <option value="System">System (Auto)</option>
+                      <option value="Light">Light</option>
+                      <option value="Dark">Dark</option>
+                    </select>
+                  </div>
+
+                  {/* Text Size */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      {t.preferencesModal.textSizeLabel}
+                    </label>
+                    <select
+                      value={draftPreferences.textSize}
+                      onChange={(e) =>
+                        setDraftPreferences({
+                          ...draftPreferences,
+                          textSize: e.target.value as TextSize,
+                        })
+                      }
+                      className="w-full px-2.5 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 min-h-[40px]"
+                    >
+                      <option value="Standard">Standard</option>
+                      <option value="Large">Large (Default for outdoor)</option>
+                      <option value="Extra large">Extra large</option>
+                    </select>
+                  </div>
+
+                  {/* Contrast */}
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      {t.preferencesModal.contrastLabel}
+                    </label>
+                    <select
+                      value={draftPreferences.highContrast ? 'High contrast' : 'Standard'}
+                      onChange={(e) =>
+                        setDraftPreferences({
+                          ...draftPreferences,
+                          highContrast: e.target.value === 'High contrast',
+                        })
+                      }
+                      className="w-full px-2.5 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 min-h-[40px]"
+                    >
+                      <option value="Standard">Standard</option>
+                      <option value="High contrast">High contrast (Sunlight)</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Read Aloud & Reduce Motion toggles */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                  <div className="flex items-center justify-between p-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg">
+                    <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                      {t.preferencesModal.readAloudLabel}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setDraftPreferences({
+                          ...draftPreferences,
+                          readAloud: !draftPreferences.readAloud,
+                        })
+                      }
+                      className={`w-11 h-6 rounded-full transition-colors p-0.5 focus:outline-hidden ${
+                        draftPreferences.readAloud ? 'bg-emerald-800' : 'bg-slate-300 dark:bg-slate-700'
+                      }`}
+                      role="switch"
+                      aria-checked={draftPreferences.readAloud}
+                    >
+                      <div
+                        className={`w-5 h-5 rounded-full bg-white shadow-xs transition-transform ${
+                          draftPreferences.readAloud ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-between p-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg">
+                    <span className="text-xs font-semibold text-slate-800 dark:text-slate-200">
+                      {t.preferencesModal.reduceMotionLabel}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setDraftPreferences({
+                          ...draftPreferences,
+                          reduceMotion: !draftPreferences.reduceMotion,
+                        })
+                      }
+                      className={`w-11 h-6 rounded-full transition-colors p-0.5 focus:outline-hidden ${
+                        draftPreferences.reduceMotion ? 'bg-emerald-800' : 'bg-slate-300 dark:bg-slate-700'
+                      }`}
+                      role="switch"
+                      aria-checked={draftPreferences.reduceMotion}
+                    >
+                      <div
+                        className={`w-5 h-5 rounded-full bg-white shadow-xs transition-transform ${
+                          draftPreferences.reduceMotion ? 'translate-x-5' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Recommendation Mode & Interaction Preference */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+                    {t.preferencesModal.recommendationModeLabel}
+                  </label>
+                  <select
+                    value={draftPreferences.recommendationMode}
+                    onChange={(e) =>
+                      setDraftPreferences({
+                        ...draftPreferences,
+                        recommendationMode: e.target.value as RecommendationMode,
+                      })
+                    }
+                    className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 min-h-[40px]"
+                  >
+                    <option value="Important situations">Important situations only (Default)</option>
+                    <option value="All recommendations">All recommendations</option>
+                    <option value="Only when requested">Only when requested</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+                    {t.preferencesModal.interactionPrefLabel}
+                  </label>
+                  <select
+                    value={draftPreferences.interactionPreference}
+                    onChange={(e) =>
+                      setDraftPreferences({
+                        ...draftPreferences,
+                        interactionPreference: e.target.value as InteractionPreference,
+                      })
+                    }
+                    className="w-full px-3 py-2 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 min-h-[40px]"
+                  >
+                    <option value="Balanced">Balanced (Default)</option>
+                    <option value="Touch">Touch first</option>
+                    <option value="Voice">Voice first</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Quiet Hours */}
+              <div className="p-3.5 bg-slate-50/70 dark:bg-slate-800/40 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between">
+                <div>
+                  <span className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-slate-500" />
+                    <span>{t.preferencesModal.quietHoursLabel}</span>
+                  </span>
+                  <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                    No audible notifications will sound during this time.
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-xs">
+                  <input
+                    type="time"
+                    value={draftPreferences.quietHours?.start ?? '21:00'}
+                    onChange={(e) =>
+                      setDraftPreferences({
+                        ...draftPreferences,
+                        quietHours: {
+                          start: e.target.value,
+                          end: draftPreferences.quietHours?.end ?? '06:00',
+                        },
+                      })
+                    }
+                    className="px-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded text-xs"
+                  />
+                  <span>to</span>
+                  <input
+                    type="time"
+                    value={draftPreferences.quietHours?.end ?? '06:00'}
+                    onChange={(e) =>
+                      setDraftPreferences({
+                        ...draftPreferences,
+                        quietHours: {
+                          start: draftPreferences.quietHours?.start ?? '21:00',
+                          end: e.target.value,
+                        },
+                      })
+                    }
+                    className="px-2 py-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded text-xs"
+                  />
+                </div>
+              </div>
+
+              {/* Enabled Alert & Reminder Categories */}
+              <div className="space-y-3">
+                <span className="text-xs font-bold text-slate-900 dark:text-slate-100 block">
+                  Alert & Reminder Subscriptions
+                </span>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <div className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl space-y-2">
+                    <span className="font-semibold text-slate-700 dark:text-slate-300 block text-[11px]">
+                      Important Alerts:
+                    </span>
+                    {ALERT_OPTIONS.map((alert) => (
+                      <label key={alert} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={(draftPreferences.notificationPreferences?.importantAlerts ?? []).includes(alert)}
+                          onChange={() => handleAlertToggle(alert)}
+                          className="rounded text-emerald-800 focus:ring-emerald-700"
+                        />
+                        <span>{alert}</span>
+                      </label>
+                    ))}
+                  </div>
+
+                  <div className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl space-y-2">
+                    <span className="font-semibold text-slate-700 dark:text-slate-300 block text-[11px]">
+                      Activity Reminders:
+                    </span>
+                    {REMINDER_OPTIONS.map((reminder) => (
+                      <label key={reminder} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={(draftPreferences.notificationPreferences?.reminders ?? []).includes(reminder)}
+                          onChange={() => handleReminderToggle(reminder)}
+                          className="rounded text-emerald-800 focus:ring-emerald-700"
+                        />
+                        <span>{reminder}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2: FARMER PROFILE ("Who am I?") */}
           {activeTab === 'profile' && (
             <div className="space-y-5">
-              <div className="bg-emerald-50/50 p-3.5 rounded-xl border border-emerald-100 text-xs text-slate-600 leading-relaxed">
-                <strong>Architectural Principle:</strong> Your profile defines your farming background, identity, and strategic objectives. It is strictly separated from your farm plots and soil measurements.
+              <div className="bg-amber-50 dark:bg-amber-950/40 p-3.5 rounded-xl border border-amber-200 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200 leading-relaxed">
+                <strong>Demo Farmer Notice:</strong> These are demo values (Ravi Kumar / Ravi garu, Rasapūdipalem). Phone number, GPS coordinates, and soil tests remain unrecorded. We never invent missing data.
               </div>
 
               {/* Name & Preferred Name */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1">
-                    Full Legal / Official Name *
+                  <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+                    Full Name *
                   </label>
                   <input
                     type="text"
@@ -186,20 +640,17 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                             .split(' ')
                             .map((n) => n[0])
                             .join('')
-                            .toUpperCase() || 'FP',
+                            .toUpperCase() || 'RK',
                       })
                     }
-                    className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:outline-hidden focus:ring-1 focus:ring-emerald-700 min-h-[42px]"
+                    className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 min-h-[42px]"
                     required
                   />
-                  <span className="text-[11px] text-slate-400 mt-0.5 block">
-                    Used for official mandi receipts and records.
-                  </span>
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1">
-                    Preferred Greeting / How We Address You *
+                  <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+                    Preferred Name / Address Greeting *
                   </label>
                   <input
                     type="text"
@@ -210,48 +661,35 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                         preferredName: e.target.value,
                       })
                     }
-                    placeholder="e.g. Ramesh-ji, Patel Sahab"
-                    className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:outline-hidden focus:ring-1 focus:ring-emerald-700 min-h-[42px]"
+                    placeholder="e.g. Ravi garu"
+                    className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 min-h-[42px]"
                     required
                   />
-                  <span className="text-[11px] text-slate-400 mt-0.5 block">
-                    Used in daily greetings: "Namaste, {draftProfile.preferredName || draftProfile.fullName}"
-                  </span>
                 </div>
               </div>
 
-              {/* Role & Experience */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Role, Experience & Digital Comfort */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1">
-                    Farming Role *
+                  <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+                    Role
                   </label>
-                  <select
+                  <input
+                    type="text"
                     value={draftProfile.role}
-                    onChange={(e) =>
-                      setDraftProfile({
-                        ...draftProfile,
-                        role: e.target.value as FarmerRole,
-                      })
-                    }
-                    className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:outline-hidden focus:ring-1 focus:ring-emerald-700 min-h-[42px]"
-                  >
-                    {Object.entries(ROLE_LABELS).map(([key, label]) => (
-                      <option key={key} value={key}>
-                        {label}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(e) => setDraftProfile({ ...draftProfile, role: e.target.value })}
+                    className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 min-h-[40px]"
+                  />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1">
-                    Farming Experience (Years)
+                  <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+                    Experience (Years)
                   </label>
                   <input
                     type="number"
                     min={0}
-                    max={80}
+                    max={60}
                     value={draftProfile.experienceYears}
                     onChange={(e) =>
                       setDraftProfile({
@@ -259,111 +697,110 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
                         experienceYears: parseInt(e.target.value) || 0,
                       })
                     }
-                    className="w-full px-3 py-2 text-xs sm:text-sm bg-slate-50 border border-slate-200 rounded-lg text-slate-900 focus:outline-hidden focus:ring-1 focus:ring-emerald-700 min-h-[42px]"
+                    className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 min-h-[40px]"
                   />
-                  <span className="text-[11px] text-slate-400 mt-0.5 block">
-                    Helps calibrate advice level without underestimating your wisdom.
-                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+                    Digital Comfort
+                  </label>
+                  <select
+                    value={draftProfile.digitalComfort}
+                    onChange={(e) =>
+                      setDraftProfile({
+                        ...draftProfile,
+                        digitalComfort: e.target.value as 'Basic' | 'Intermediate' | 'Advanced',
+                      })
+                    }
+                    className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100 min-h-[40px]"
+                  >
+                    <option value="Basic">Basic</option>
+                    <option value="Intermediate">Intermediate (Default)</option>
+                    <option value="Advanced">Advanced</option>
+                  </select>
                 </div>
               </div>
 
-              {/* Location & Contact */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Location */}
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1">
-                    Village / Town
+                  <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+                    Village
                   </label>
                   <input
                     type="text"
                     value={draftProfile.village}
-                    onChange={(e) =>
-                      setDraftProfile({
-                        ...draftProfile,
-                        village: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-900 min-h-[40px]"
+                    onChange={(e) => setDraftProfile({ ...draftProfile, village: e.target.value })}
+                    className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg min-h-[40px]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1">
+                  <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
                     District
                   </label>
                   <input
                     type="text"
                     value={draftProfile.district}
-                    onChange={(e) =>
-                      setDraftProfile({
-                        ...draftProfile,
-                        district: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-900 min-h-[40px]"
+                    onChange={(e) => setDraftProfile({ ...draftProfile, district: e.target.value })}
+                    className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg min-h-[40px]"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1">
+                  <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
                     State
                   </label>
                   <input
                     type="text"
                     value={draftProfile.state}
-                    onChange={(e) =>
-                      setDraftProfile({
-                        ...draftProfile,
-                        state: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-900 min-h-[40px]"
+                    onChange={(e) => setDraftProfile({ ...draftProfile, state: e.target.value })}
+                    className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg min-h-[40px]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1">
+                    Country
+                  </label>
+                  <input
+                    type="text"
+                    value={draftProfile.country}
+                    onChange={(e) => setDraftProfile({ ...draftProfile, country: e.target.value })}
+                    className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg min-h-[40px]"
                   />
                 </div>
               </div>
 
-              {/* Primary Farming Objectives */}
+              {/* Primary Objectives */}
               <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1.5">
-                  Primary Farming Objectives (Select all that apply)
+                <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
+                  Primary Objectives (Ravi Kumar)
                 </label>
-                <p className="text-[11px] text-slate-500 mb-3">
-                  These priorities shape which observations and insights are highlighted for you.
-                </p>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  {(
-                    Object.entries(OBJECTIVE_LABELS) as [
-                      FarmerObjective,
-                      string
-                    ][]
-                  ).map(([key, label]) => {
-                    const isChecked = draftProfile.primaryObjectives.includes(key);
+                <div className="space-y-2">
+                  {OBJECTIVE_OPTIONS.map((obj) => {
+                    const isChecked = (draftProfile.primaryObjectives || []).includes(obj);
                     return (
                       <div
-                        key={key}
-                        onClick={() => handleObjectiveToggle(key)}
-                        className={`p-3 rounded-xl border text-xs cursor-pointer transition-colors flex items-start gap-2.5 min-h-[44px] ${
+                        key={obj}
+                        onClick={() => handleObjectiveToggle(obj)}
+                        className={`p-2.5 rounded-lg border text-xs cursor-pointer flex items-center gap-2.5 ${
                           isChecked
-                            ? 'border-emerald-700 bg-emerald-50/70 text-emerald-950 font-medium'
-                            : 'border-slate-200 hover:border-slate-300 text-slate-700 bg-slate-50/40'
+                            ? 'border-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-950 dark:text-emerald-200 font-medium'
+                            : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/40 text-slate-700 dark:text-slate-300'
                         }`}
                         role="checkbox"
                         aria-checked={isChecked}
                         tabIndex={0}
-                        onKeyDown={(e) => {
-                          if (e.key === ' ' || e.key === 'Enter') {
-                            handleObjectiveToggle(key);
-                          }
-                        }}
                       >
                         <div
-                          className={`w-4 h-4 rounded border mt-0.5 flex items-center justify-center shrink-0 ${
+                          className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
                             isChecked
                               ? 'bg-emerald-800 border-emerald-800 text-white'
-                              : 'border-slate-300 bg-white'
+                              : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900'
                           }`}
                         >
                           {isChecked && <Check className="w-3 h-3 stroke-[3]" />}
                         </div>
-                        <span className="leading-snug">{label}</span>
+                        <span>{obj}</span>
                       </div>
                     );
                   })}
@@ -371,368 +808,16 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
               </div>
             </div>
           )}
-
-          {/* TAB 2: APPLICATION PREFERENCES ("How should the app behave for me?") */}
-          {activeTab === 'preferences' && (
-            <div className="space-y-6">
-              {/* Interaction Mode */}
-              <div>
-                <label className="block text-xs font-bold text-slate-800 mb-1">
-                  Interaction Ergonomics Mode *
-                </label>
-                <p className="text-[11px] text-slate-500 mb-3">
-                  Choose how much complexity and digital density you prefer in your daily workflow.
-                </p>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  {/* Mode: Simplified */}
-                  <div
-                    onClick={() =>
-                      setDraftPreferences({
-                        ...draftPreferences,
-                        interactionMode: 'simplified',
-                      })
-                    }
-                    className={`p-3.5 rounded-xl border cursor-pointer transition-all min-h-[44px] ${
-                      draftPreferences.interactionMode === 'simplified'
-                        ? 'border-emerald-700 bg-emerald-50/70 shadow-xs'
-                        : 'border-slate-200 hover:border-slate-300 bg-white'
-                    }`}
-                    role="button"
-                    tabIndex={0}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-bold text-slate-900">
-                        Simplified
-                      </span>
-                      {draftPreferences.interactionMode === 'simplified' && (
-                        <Check className="w-3.5 h-3.5 text-emerald-800 stroke-[3]" />
-                      )}
-                    </div>
-                    <p className="text-[11px] text-slate-600 leading-snug">
-                      Large buttons, voice/camera emphasis, minimal forms, audio hints. For high outdoor friction.
-                    </p>
-                  </div>
-
-                  {/* Mode: Standard */}
-                  <div
-                    onClick={() =>
-                      setDraftPreferences({
-                        ...draftPreferences,
-                        interactionMode: 'standard',
-                      })
-                    }
-                    className={`p-3.5 rounded-xl border cursor-pointer transition-all min-h-[44px] ${
-                      draftPreferences.interactionMode === 'standard'
-                        ? 'border-emerald-700 bg-emerald-50/70 shadow-xs'
-                        : 'border-slate-200 hover:border-slate-300 bg-white'
-                    }`}
-                    role="button"
-                    tabIndex={0}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-bold text-slate-900">
-                        Balanced (Standard)
-                      </span>
-                      {draftPreferences.interactionMode === 'standard' && (
-                        <Check className="w-3.5 h-3.5 text-emerald-800 stroke-[3]" />
-                      )}
-                    </div>
-                    <p className="text-[11px] text-slate-600 leading-snug">
-                      Practical balance of quick actions, field summaries, and straightforward logging.
-                    </p>
-                  </div>
-
-                  {/* Mode: Data-Rich */}
-                  <div
-                    onClick={() =>
-                      setDraftPreferences({
-                        ...draftPreferences,
-                        interactionMode: 'data_rich',
-                      })
-                    }
-                    className={`p-3.5 rounded-xl border cursor-pointer transition-all min-h-[44px] ${
-                      draftPreferences.interactionMode === 'data_rich'
-                        ? 'border-emerald-700 bg-emerald-50/70 shadow-xs'
-                        : 'border-slate-200 hover:border-slate-300 bg-white'
-                    }`}
-                    role="button"
-                    tabIndex={0}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-bold text-slate-900">
-                        Data-Rich
-                      </span>
-                      {draftPreferences.interactionMode === 'data_rich' && (
-                        <Check className="w-3.5 h-3.5 text-emerald-800 stroke-[3]" />
-                      )}
-                    </div>
-                    <p className="text-[11px] text-slate-600 leading-snug">
-                      Detailed tabular breakdowns, audit history, deeper telemetry and numerical charts.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Display Scale & High Contrast Outdoor Mode */}
-              <div className="p-4 bg-slate-50/70 rounded-xl border border-slate-200 space-y-4">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-xs font-bold text-slate-900">
-                      Outdoor Readability & Accessibility
-                    </h3>
-                    <p className="text-[11px] text-slate-500">
-                      Designed specifically for direct sunlight and one-handed farm use.
-                    </p>
-                  </div>
-                  <Sun className="w-4 h-4 text-amber-600" />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-                  {/* Display Scale */}
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">
-                      Text & Control Scale
-                    </label>
-                    <select
-                      value={draftPreferences.displayScale}
-                      onChange={(e) =>
-                        setDraftPreferences({
-                          ...draftPreferences,
-                          displayScale: e.target.value as DisplayScale,
-                        })
-                      }
-                      className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-lg text-slate-900 min-h-[40px]"
-                    >
-                      <option value="standard">Standard Scale (100%)</option>
-                      <option value="large">Large / Sunlight Readability (115%)</option>
-                      <option value="extra_large">Extra Large / Senior (130%)</option>
-                    </select>
-                  </div>
-
-                  {/* High Contrast Mode Toggle */}
-                  <div className="flex items-center justify-between p-2.5 bg-white border border-slate-200 rounded-lg">
-                    <div>
-                      <span className="text-xs font-bold text-slate-900 block">
-                        High-Contrast Sunlight Mode
-                      </span>
-                      <span className="text-[11px] text-slate-500 block">
-                        Deepens contrasts for harsh field glare
-                      </span>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setDraftPreferences({
-                          ...draftPreferences,
-                          highContrastMode: !draftPreferences.highContrastMode,
-                        })
-                      }
-                      className={`w-11 h-6 rounded-full transition-colors p-0.5 focus:outline-hidden ${
-                        draftPreferences.highContrastMode
-                          ? 'bg-slate-900'
-                          : 'bg-slate-300'
-                      }`}
-                      role="switch"
-                      aria-checked={draftPreferences.highContrastMode}
-                    >
-                      <div
-                        className={`w-5 h-5 rounded-full bg-white shadow-xs transition-transform ${
-                          draftPreferences.highContrastMode
-                            ? 'translate-x-5'
-                            : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Audio Feedback Toggle */}
-                <div className="flex items-center justify-between p-2.5 bg-white border border-slate-200 rounded-lg">
-                  <div className="flex items-center gap-2">
-                    {draftPreferences.audioFeedback ? (
-                      <Volume2 className="w-4 h-4 text-emerald-800" />
-                    ) : (
-                      <VolumeX className="w-4 h-4 text-slate-400" />
-                    )}
-                    <div>
-                      <span className="text-xs font-bold text-slate-900 block">
-                        Audio Confirmation & Tap Cues
-                      </span>
-                      <span className="text-[11px] text-slate-500 block">
-                        Chime feedback when completing field logging
-                      </span>
-                    </div>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setDraftPreferences({
-                        ...draftPreferences,
-                        audioFeedback: !draftPreferences.audioFeedback,
-                      })
-                    }
-                    className={`w-11 h-6 rounded-full transition-colors p-0.5 focus:outline-hidden ${
-                      draftPreferences.audioFeedback
-                        ? 'bg-emerald-800'
-                        : 'bg-slate-300'
-                    }`}
-                    role="switch"
-                    aria-checked={draftPreferences.audioFeedback}
-                  >
-                    <div
-                      className={`w-5 h-5 rounded-full bg-white shadow-xs transition-transform ${
-                        draftPreferences.audioFeedback
-                          ? 'translate-x-5'
-                          : 'translate-x-0'
-                      }`}
-                    />
-                  </button>
-                </div>
-              </div>
-
-              {/* Language & Voice Preferences */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1">
-                    Interface Language
-                  </label>
-                  <select
-                    value={draftPreferences.language}
-                    onChange={(e) =>
-                      setDraftPreferences({
-                        ...draftPreferences,
-                        language: e.target.value as 'en' | 'hi' | 'hinglish',
-                      })
-                    }
-                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-900 min-h-[40px]"
-                  >
-                    <option value="en">English (Default)</option>
-                    <option value="hi">हिन्दी (Hindi)</option>
-                    <option value="hinglish">Hinglish (Hindi in Latin Script)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1">
-                    Voice Input / Dictation Language
-                  </label>
-                  <select
-                    value={draftPreferences.voiceLanguage}
-                    onChange={(e) =>
-                      setDraftPreferences({
-                        ...draftPreferences,
-                        voiceLanguage: e.target.value as 'hi-IN' | 'en-IN',
-                      })
-                    }
-                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-900 min-h-[40px]"
-                  >
-                    <option value="hi-IN">हिन्दी - India (hi-IN)</option>
-                    <option value="en-IN">Indian English (en-IN)</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Agricultural Units */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1">
-                    Preferred Land Area Unit
-                  </label>
-                  <select
-                    value={draftPreferences.unitLand}
-                    onChange={(e) =>
-                      setDraftPreferences({
-                        ...draftPreferences,
-                        unitLand: e.target.value as LandUnit,
-                      })
-                    }
-                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-900 min-h-[40px]"
-                  >
-                    <option value="acres">Acres (Standard)</option>
-                    <option value="bigha">Bigha (Central India / MP)</option>
-                    <option value="hectares">Hectares</option>
-                    <option value="guntha">Guntha</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1">
-                    Preferred Crop Yield / Weight Unit
-                  </label>
-                  <select
-                    value={draftPreferences.unitWeight}
-                    onChange={(e) =>
-                      setDraftPreferences({
-                        ...draftPreferences,
-                        unitWeight: e.target.value as WeightUnit,
-                      })
-                    }
-                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-900 min-h-[40px]"
-                  >
-                    <option value="quintals">Quintals (100 kg)</option>
-                    <option value="kg">Kilograms (kg)</option>
-                    <option value="bags">Standard 50kg Bags</option>
-                    <option value="tons">Metric Tons</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* AI Response Style & Advisory Behavior */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1">
-                    Advisory Response Style
-                  </label>
-                  <select
-                    value={draftPreferences.aiResponseStyle}
-                    onChange={(e) =>
-                      setDraftPreferences({
-                        ...draftPreferences,
-                        aiResponseStyle: e.target.value as AiResponseStyle,
-                      })
-                    }
-                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-900 min-h-[40px]"
-                  >
-                    <option value="concise">Concise & Direct (Only actionable points)</option>
-                    <option value="explanatory">Guided & Explanatory (Explain reasoning)</option>
-                    <option value="conversational">Conversational (Ask clarifying questions)</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-800 mb-1">
-                    Decision Strategy Calibrator
-                  </label>
-                  <select
-                    value={draftPreferences.recommendationBehavior}
-                    onChange={(e) =>
-                      setDraftPreferences({
-                        ...draftPreferences,
-                        recommendationBehavior: e.target.value as RecommendationBehavior,
-                      })
-                    }
-                    className="w-full px-3 py-2 text-xs bg-slate-50 border border-slate-200 rounded-lg text-slate-900 min-h-[40px]"
-                  >
-                    <option value="conservative">Conservative (Low input risk & capital preservation)</option>
-                    <option value="balanced">Balanced (Optimal market return)</option>
-                    <option value="progressive">Progressive (Targeting maximum top-end yield)</option>
-                    <option value="soil_first">Soil-First (Regenerative & biological health)</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-          )}
         </div>
 
         {/* Footer Actions */}
-        <div className="p-4 sm:p-5 border-t border-slate-200 bg-slate-50/70 flex items-center justify-between">
+        <div className="p-4 sm:p-5 border-t border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/50 flex items-center justify-between">
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-200 rounded-lg transition-colors min-h-[40px]"
+            className="px-4 py-2 text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 rounded-lg transition-colors min-h-[40px]"
           >
-            Cancel
+            {t.actions.cancel}
           </button>
 
           <button
@@ -741,7 +826,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
             className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-800 text-white rounded-lg text-xs font-bold hover:bg-emerald-900 transition-colors shadow-xs min-h-[44px]"
           >
             <Save className="w-4 h-4" />
-            <span>Save & Apply Personalization</span>
+            <span>{t.preferencesModal.saveAndApply}</span>
           </button>
         </div>
       </div>

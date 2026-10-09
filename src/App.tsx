@@ -13,7 +13,7 @@ import {
   INITIAL_FARMER_PREFERENCES,
 } from './data/mockProfileData';
 import { FarmEvent, SyncState } from './types/farm';
-import { FarmerProfile, FarmerPreferences } from './types/profile';
+import { FarmerProfile, FarmerPreferences, migratePreferences } from './types/profile';
 import { TopBar, NavTab } from './components/layout/TopBar';
 import { BottomNavigation } from './components/layout/BottomNavigation';
 import { HomeScreen } from './components/screens/HomeScreen';
@@ -25,6 +25,7 @@ import { QuickRecordModal } from './components/common/QuickRecordModal';
 import { ProfileModal } from './components/profile/ProfileModal';
 import { EmptyState } from './components/common/EmptyState';
 import { ErrorState } from './components/common/ErrorState';
+import { ActivityStorageService } from './services/activityStorage';
 import {
   SlidersHorizontal,
   RefreshCw,
@@ -39,7 +40,9 @@ const STORAGE_KEY_PREFS = 'farm_intel_farmer_preferences';
 export default function App() {
   const [activeTab, setActiveTab] = useState<NavTab>('home');
   const [syncState, setSyncState] = useState<SyncState>('online');
-  const [events, setEvents] = useState<FarmEvent[]>(INITIAL_DEMO_EVENTS);
+  const [events, setEvents] = useState<FarmEvent[]>(() => {
+    return ActivityStorageService.loadAllRecords();
+  });
   const [isQuickRecordOpen, setIsQuickRecordOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
 
@@ -47,7 +50,17 @@ export default function App() {
   const [profile, setProfile] = useState<FarmerProfile>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY_PROFILE);
-      return saved ? JSON.parse(saved) : INITIAL_FARMER_PROFILE;
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        return {
+          ...INITIAL_FARMER_PROFILE,
+          ...parsed,
+          primaryObjectives: Array.isArray(parsed?.primaryObjectives)
+            ? parsed.primaryObjectives
+            : INITIAL_FARMER_PROFILE.primaryObjectives,
+        };
+      }
+      return INITIAL_FARMER_PROFILE;
     } catch {
       return INITIAL_FARMER_PROFILE;
     }
@@ -56,7 +69,7 @@ export default function App() {
   const [preferences, setPreferences] = useState<FarmerPreferences>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY_PREFS);
-      return saved ? JSON.parse(saved) : INITIAL_FARMER_PREFERENCES;
+      return saved ? migratePreferences(JSON.parse(saved)) : INITIAL_FARMER_PREFERENCES;
     } catch {
       return INITIAL_FARMER_PREFERENCES;
     }
@@ -85,14 +98,31 @@ export default function App() {
   };
 
   const handleAddEvent = (newEvent: FarmEvent) => {
-    setEvents((prev) => [newEvent, ...prev]);
+    ActivityStorageService.saveRecord(newEvent, true);
+    setEvents(ActivityStorageService.loadAllRecords());
     // If in offline mode, automatically transition to pending_sync to show visual offline sync queue!
     if (syncState === 'offline') {
       setSyncState('pending_sync');
     }
   };
 
+  const handleConfirmEvent = (eventId: string) => {
+    ActivityStorageService.confirmRecord(eventId, profile.preferredName || profile.fullName);
+    setEvents(ActivityStorageService.loadAllRecords());
+  };
+
+  const handleDeleteEvent = (eventId: string) => {
+    ActivityStorageService.deleteRecord(eventId);
+    setEvents(ActivityStorageService.loadAllRecords());
+  };
+
+  const handleEditEvent = (updatedEvent: FarmEvent) => {
+    ActivityStorageService.updateRecord(updatedEvent.eventId, updatedEvent);
+    setEvents(ActivityStorageService.loadAllRecords());
+  };
+
   const handleResetData = () => {
+    ActivityStorageService.resetAllFarmerRecords();
     setEvents(INITIAL_DEMO_EVENTS);
     setSyncState('online');
     setQaViewMode('standard');
@@ -108,22 +138,23 @@ export default function App() {
 
   // Determine root scale class based on preferences
   const scaleClass =
-    preferences.displayScale === 'extra_large'
+    preferences.textSize === 'Extra large'
       ? 'text-[17px]'
-      : preferences.displayScale === 'large'
+      : preferences.textSize === 'Large'
       ? 'text-[15px]'
       : 'text-[14px]';
 
-  // High contrast outdoor sunlight styling
-  const highContrastClass = preferences.highContrastMode
-    ? 'border-black text-black bg-white ring-1 ring-black/40'
-    : '';
+  const isDarkMode =
+    preferences.theme === 'Dark' ||
+    (preferences.theme === 'System' &&
+      typeof window !== 'undefined' &&
+      window.matchMedia?.('(prefers-color-scheme: dark)').matches);
 
   return (
     <div
-      className={`min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans selection:bg-emerald-100 selection:text-emerald-900 ${scaleClass} ${
-        preferences.highContrastMode ? 'grayscale-25 contrast-115' : ''
-      }`}
+      className={`min-h-screen ${isDarkMode ? 'dark bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'} flex flex-col font-sans selection:bg-emerald-100 selection:text-emerald-900 ${scaleClass} ${
+        preferences.highContrast ? 'contrast-125 saturate-110' : ''
+      } ${preferences.reduceMotion ? 'motion-reduce' : ''}`}
     >
       {/* Top Bar Navigation with Zone 3 Profile Avatar Trigger */}
       <TopBar
@@ -153,7 +184,7 @@ export default function App() {
       )}
 
       {/* High Contrast Sunlight Mode notification banner */}
-      {preferences.highContrastMode && (
+      {preferences.highContrast && (
         <div className="bg-slate-900 text-white px-4 py-1.5 text-xs text-center font-bold flex items-center justify-center gap-2">
           <Sun className="w-3.5 h-3.5 text-amber-400" />
           <span>High-Contrast Sunlight Mode Active (Optimized for Outdoor Glare)</span>
@@ -265,50 +296,73 @@ export default function App() {
                     onClick={() =>
                       handleSavePreferences({
                         ...preferences,
-                        highContrastMode: !preferences.highContrastMode,
+                        highContrast: !preferences.highContrast,
                       })
                     }
                     className={`px-2.5 py-1 rounded font-medium ${
-                      preferences.highContrastMode
+                      preferences.highContrast
                         ? 'bg-amber-600 text-white font-bold'
                         : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                     }`}
                   >
-                    Sunlight Contrast: {preferences.highContrastMode ? 'ON' : 'OFF'}
+                    Sunlight Contrast: {preferences.highContrast ? 'ON' : 'OFF'}
                   </button>
 
                   <button
                     type="button"
-                    onClick={() =>
+                    onClick={() => {
+                      const modes: ('Quick' | 'Assisted' | 'Detailed')[] = [
+                        'Quick',
+                        'Assisted',
+                        'Detailed',
+                      ];
+                      const next =
+                        modes[(modes.indexOf(preferences.interactionMode) + 1) % modes.length];
                       handleSavePreferences({
                         ...preferences,
-                        interactionMode:
-                          preferences.interactionMode === 'simplified'
-                            ? 'standard'
-                            : 'simplified',
-                      })
-                    }
-                    className={`px-2.5 py-1 rounded font-medium ${
-                      preferences.interactionMode === 'simplified'
-                        ? 'bg-emerald-600 text-white font-bold'
-                        : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                    }`}
+                        interactionMode: next,
+                      });
+                    }}
+                    className="px-2.5 py-1 rounded font-medium bg-emerald-600 text-white font-bold hover:bg-emerald-500"
                   >
                     Mode: {preferences.interactionMode}
                   </button>
 
                   <button
                     type="button"
-                    onClick={() =>
+                    onClick={() => {
+                      const themes: ('System' | 'Light' | 'Dark')[] = ['System', 'Light', 'Dark'];
+                      const next =
+                        themes[(themes.indexOf(preferences.theme) + 1) % themes.length];
                       handleSavePreferences({
                         ...preferences,
-                        unitLand:
-                          preferences.unitLand === 'bigha' ? 'acres' : 'bigha',
-                      })
-                    }
+                        theme: next,
+                      });
+                    }}
                     className="px-2.5 py-1 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 font-medium"
                   >
-                    Unit: {preferences.unitLand}
+                    Theme: {preferences.theme}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const units: ('acres' | 'bigha' | 'hectares' | 'guntha')[] = [
+                        'acres',
+                        'bigha',
+                        'hectares',
+                        'guntha',
+                      ];
+                      const current = preferences.unitLand || 'acres';
+                      const next = units[(units.indexOf(current) + 1) % units.length];
+                      handleSavePreferences({
+                        ...preferences,
+                        unitLand: next,
+                      });
+                    }}
+                    className="px-2.5 py-1 rounded bg-slate-800 text-slate-300 hover:bg-slate-700 font-medium"
+                  >
+                    Unit: {preferences.unitLand || 'acres'}
                   </button>
                 </div>
               </div>
@@ -365,6 +419,9 @@ export default function App() {
                 events={events}
                 preferences={preferences}
                 onRecordActivityClick={() => setIsQuickRecordOpen(true)}
+                onConfirmEvent={handleConfirmEvent}
+                onDeleteEvent={handleDeleteEvent}
+                onEditEvent={handleEditEvent}
               />
             )}
 
@@ -375,6 +432,9 @@ export default function App() {
                 events={events}
                 preferences={preferences}
                 onAddEvent={handleAddEvent}
+                onConfirmEvent={handleConfirmEvent}
+                onDeleteEvent={handleDeleteEvent}
+                onEditEvent={handleEditEvent}
               />
             )}
 

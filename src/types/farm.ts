@@ -1,6 +1,6 @@
 /**
- * AI-Powered Farm Intelligence Platform
- * Phase 0 — Core Extensible Data Models
+ * AI-Powered Farm Intelligence Platform / AI Farm Hub
+ * Phase 0.5 — Core Extensible Data Models with Provenance and Trust Tracking
  */
 
 export type TrustStatus =
@@ -13,25 +13,54 @@ export type TrustStatus =
 
 export type EventSource =
   | 'farmer_reported'
-  | 'farmer_confirmed'
   | 'ai_extracted'
-  | 'ai_estimated'
+  | 'farmer_confirmed'
   | 'verified_document'
+  | 'demo_data'
+  | 'unknown';
+
+export type RecordStatus =
+  | 'draft'
+  | 'pending_confirmation'
+  | 'farmer_confirmed'
+  | 'conflicting'
+  | 'demo'
+  | 'demo_incomplete'
   | 'unknown';
 
 export type SyncState = 'online' | 'offline' | 'pending_sync' | 'sync_completed';
 
 export type SemanticHealth = 'healthy' | 'attention' | 'urgent' | 'info' | 'unknown';
 
+export interface CorrectionHistoryItem {
+  id: string;
+  timestamp: string;
+  field: string;
+  oldValue: string | number | null | undefined;
+  newValue: string | number | null | undefined;
+  reason?: string;
+}
+
+export interface ConflictItem {
+  field: string;
+  existingValue: string | number | null | undefined;
+  incomingValue: string | number | null | undefined;
+  description: string;
+}
+
 export interface Farmer {
   id: string;
   name: string;
-  phone: string;
+  preferredName?: string;
+  role: string;
+  phone?: string;
   village: string;
   district: string;
   state: string;
-  preferredLanguage: string;
+  country: string;
+  digitalComfort: 'Basic' | 'Intermediate' | 'Advanced';
   experienceYears: number;
+  primaryObjectives: string[];
 }
 
 export interface Farm {
@@ -43,8 +72,10 @@ export interface Farm {
   village: string;
   district: string;
   state: string;
-  soilPrimary: string;
-  primaryWaterSource: string;
+  country: string;
+  irrigationSource: string | null; // null for unknown
+  soilPrimary: string | null; // null for unknown
+  soilTestStatus: 'not_available' | 'pending' | 'verified';
 }
 
 export type CropStage =
@@ -54,18 +85,21 @@ export type CropStage =
   | 'flowering'
   | 'grain_filling'
   | 'maturity'
-  | 'harvested';
+  | 'harvested'
+  | 'unknown';
 
 export interface Plot {
   id: string;
   farmId: string;
   name: string;
   areaAcres: number;
-  soilType: string;
-  waterSource: string;
-  irrigationType: string;
+  cropName: string;
+  soilType: string | null; // null for unknown
+  waterSource: string | null; // null for unknown
+  irrigationType: string | null;
+  season?: string | null;
   currentCropCycleId?: string;
-  status: 'active_crop' | 'fallow' | 'preparation';
+  status: 'active_crop' | 'fallow' | 'preparation' | 'unknown';
   soilOrganicCarbon?: number | null; // null represents unknown (never 0!)
   soilPH?: number | null;
   soilDataTrust: TrustStatus;
@@ -74,10 +108,10 @@ export interface Plot {
 export interface Crop {
   id: string;
   commonName: string;
-  scientificName: string;
-  variety: string;
-  season: 'Kharif' | 'Rabi' | 'Zaid';
-  standardDurationDays: number;
+  scientificName?: string;
+  variety: string | null;
+  season?: string | null;
+  standardDurationDays?: number;
 }
 
 export interface CropCycle {
@@ -85,16 +119,16 @@ export interface CropCycle {
   plotId: string;
   cropId: string;
   cropName: string;
-  variety: string;
-  season: 'Kharif' | 'Rabi' | 'Zaid';
-  sowingDate: string; // YYYY-MM-DD
-  expectedHarvestDate: string; // YYYY-MM-DD
-  actualHarvestDate?: string;
+  variety: string | null;
+  season: string | null;
+  sowingDate: string | null; // YYYY-MM-DD or null
+  expectedHarvestDate: string | null;
+  actualHarvestDate?: string | null;
   stage: CropStage;
-  stageProgressPercent: number; // 0-100
-  targetYieldQuintals: number;
+  stageProgressPercent?: number;
+  targetYieldQuintals: number | null;
   actualYieldQuintals?: number | null;
-  status: 'active' | 'completed' | 'abandoned';
+  status: 'active' | 'completed' | 'abandoned' | 'unknown';
   notes?: string;
 }
 
@@ -108,13 +142,15 @@ export type FarmEventType =
   | 'weeding'
   | 'observation'
   | 'harvest'
-  | 'sale';
+  | 'sale'
+  | 'other';
 
 export interface FarmEventEvidence {
   type: 'photo' | 'receipt' | 'audio_note' | 'lab_report' | 'none';
   label?: string;
   uri?: string;
   notes?: string;
+  isDocumentVerified?: boolean;
 }
 
 export interface FarmEvent {
@@ -122,50 +158,35 @@ export interface FarmEvent {
   eventType: FarmEventType;
   farmerId: string;
   farmId: string;
-  plotId: string;
+  plotId: string | null; // null represents unknown/not specified
   plotName: string;
-  cropCycleId: string;
+  cropCycleId?: string;
   cropName: string;
-  activityDate: string; // YYYY-MM-DD
+  activityDate: string | null; // YYYY-MM-DD or null if unknown
   recordedDate: string; // ISO
   title: string;
   description?: string;
   quantity?: number | null;
-  unit?: string;
+  unit?: string | null;
   areaCoveredAcres?: number | null;
   cost?: number | null;
   currency: string;
   source: EventSource;
+  status: RecordStatus;
+  verificationStatus: TrustStatus;
+  isDemo: boolean;
   evidence: FarmEventEvidence;
   confidence?: number; // 0 - 1
-  verificationStatus: TrustStatus;
   createdBy: string;
   confirmedBy?: string;
+  confirmedAt?: string;
+  correctionHistory?: CorrectionHistoryItem[];
+  conflicts?: ConflictItem[];
+  fertilizerName?: string;
+  productName?: string;
+  isTentative?: boolean;
   createdAt: string;
   updatedAt: string;
-}
-
-export interface Expense {
-  id: string;
-  farmEventId?: string;
-  plotId: string;
-  category: 'seeds' | 'fertilizer' | 'chemicals' | 'labor' | 'irrigation_power' | 'machinery' | 'transport' | 'other';
-  amount: number;
-  currency: string;
-  date: string;
-  description: string;
-  trustStatus: TrustStatus;
-}
-
-export interface Harvest {
-  id: string;
-  cropCycleId: string;
-  plotId: string;
-  date: string;
-  quantityQuintals: number;
-  qualityGrade: string;
-  storageLocation: string;
-  trustStatus: TrustStatus;
 }
 
 export interface MarketBenchmark {
@@ -179,7 +200,7 @@ export interface MarketBenchmark {
   currency: string;
   trend: 'up' | 'down' | 'stable';
   lastUpdatedDate: string;
-  isMock: true; // Explicitly declared mock
+  isMock: true;
 }
 
 export interface FarmInsight {
@@ -190,12 +211,6 @@ export interface FarmInsight {
   severity: SemanticHealth;
   plotId?: string;
   plotName?: string;
-  metricComparison?: {
-    currentCycleValue: string;
-    previousCycleValue: string;
-    deltaPercentage: string;
-    unit: string;
-  };
-  recommendationPrompt: string; // "You decide"
+  recommendationPrompt: string;
   isDemo: true;
 }

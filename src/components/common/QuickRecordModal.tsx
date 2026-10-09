@@ -53,10 +53,12 @@ export const QuickRecordModal: React.FC<QuickRecordModalProps> = ({
       cost: cost ? parseFloat(cost) : null,
       currency: 'INR',
       source: 'farmer_reported',
+      status: 'farmer_confirmed',
+      isDemo: false,
       evidence: { type: 'none' },
       confidence: 1.0,
       verificationStatus: 'confirmed',
-      createdBy: 'Ramesh Patel',
+      createdBy: 'Ravi Kumar',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

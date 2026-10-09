@@ -1,44 +1,15 @@
-import { FarmerProfile, FarmerPreferences } from '../types/profile';
+import {
+  FarmerProfile,
+  FarmerPreferences,
+  INITIAL_PROFILE,
+  INITIAL_PREFERENCES,
+} from '../types/profile';
 
-export const INITIAL_FARMER_PROFILE: FarmerProfile = {
-  id: 'farmer-01',
-  fullName: 'Ramesh Patel',
-  preferredName: 'Ramesh-ji',
-  role: 'owner_operator',
-  experienceYears: 22,
-  primaryObjectives: [
-    'cost_reduction',
-    'soil_health_regeneration',
-    'yield_maximization',
-  ],
-  phone: '+91 98260 41209',
-  village: 'Pipariya',
-  district: 'Narmadapuram',
-  state: 'Madhya Pradesh',
-  avatarInitials: 'RP',
-};
-
-export const INITIAL_FARMER_PREFERENCES: FarmerPreferences = {
-  language: 'en',
-  voiceLanguage: 'hi-IN',
-  interactionMode: 'standard',
-  aiResponseStyle: 'explanatory',
-  recommendationBehavior: 'balanced',
-  displayScale: 'standard',
-  highContrastMode: false,
-  audioFeedback: false,
-  unitLand: 'acres',
-  unitWeight: 'quintals',
-  unitCurrency: 'INR',
-  notifications: {
-    irrigationWindowAlerts: true,
-    scoutingReminders: true,
-    mandiPriceReports: false,
-    offlineSyncAlerts: true,
-  },
-};
+export const INITIAL_FARMER_PROFILE: FarmerProfile = INITIAL_PROFILE;
+export const INITIAL_FARMER_PREFERENCES: FarmerPreferences = INITIAL_PREFERENCES;
 
 export const ROLE_LABELS: Record<string, string> = {
+  'Farmer / Farm Owner': 'Farmer / Farm Owner',
   owner_operator: 'Owner & Primary Operator',
   farm_manager: 'Farm Manager / Supervisor',
   tenant_farmer: 'Tenant / Sharecropper Farmer',
@@ -47,6 +18,11 @@ export const ROLE_LABELS: Record<string, string> = {
 };
 
 export const OBJECTIVE_LABELS: Record<string, string> = {
+  'Improve farming profitability': 'Improve farming profitability',
+  'Reduce input costs': 'Reduce input costs',
+  'Improve crop yield': 'Improve crop yield',
+  'Save water': 'Save water',
+  'Maintain accurate farm records': 'Maintain accurate farm records',
   cost_reduction: 'Reduce Input Costs & Wastage',
   yield_maximization: 'Maximize Harvest Yield & Output',
   soil_health_regeneration: 'Build Long-Term Soil Organic Matter',
