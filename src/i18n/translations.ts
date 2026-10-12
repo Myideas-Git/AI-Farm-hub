@@ -237,10 +237,32 @@ export interface TranslationDictionary {
     plotLabel: string;
     dateLabel: string;
     unitLabel: string;
+    cropMemoryTitle: string;
+    whatHaveIDone: string;
+    cropCycleSummary: string;
+    activitiesSoFar: string;
+    totalInvestedCost: string;
+    inputsApplied: string;
+    evidenceAttached: string;
+    notFactDisclaimer: string;
+    estimateNotice: string;
+    activitySowing: string;
+    activityIrrigation: string;
+    activityFertilizer: string;
+    activityPest: string;
+    activityPesticide: string;
+    activityHarvest: string;
   };
   sources: {
     farmer_reported: string;
+    farmer_voice: string;
     ai_extracted: string;
+    ai_estimated: string;
+    receipt_verified: string;
+    camera_product: string;
+    gps_captured: string;
+    weather_data: string;
+    soil_report: string;
     farmer_confirmed: string;
     verified_document: string;
     demo_data: string;
@@ -249,6 +271,7 @@ export interface TranslationDictionary {
   statuses: {
     draft: string;
     pending_confirmation: string;
+    pending_ai_processing: string;
     farmer_confirmed: string;
     conflicting: string;
     demo: string;
@@ -665,10 +688,32 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       plotLabel: 'పొలం ప్లాట్',
       dateLabel: 'పని జరిగిన తేదీ',
       unitLabel: 'కొలత యూనిట్',
+      cropMemoryTitle: 'డిజిటల్ ఫార్మ్ మెమరీ (పంట కాల చక్ర జ్ఞాపకం)',
+      whatHaveIDone: 'ఈ పంటపై ఇప్పటివరకు నేను ఏమి చేశాను?',
+      cropCycleSummary: 'పంట చక్ర సమగ్ర సారాంశం',
+      activitiesSoFar: 'ఇప్పటివరకు జరిగిన పనులు',
+      totalInvestedCost: 'మొత్తం ఖర్చు',
+      inputsApplied: 'ఉపయోగించిన ఉత్పాదకాలు',
+      evidenceAttached: 'జోడించిన ఆధారాలు',
+      notFactDisclaimer: 'AI అంచనా · నిర్ధారించబడిన వాస్తవం కాదు',
+      estimateNotice: 'గమనిక: ఇది AI అంచనా మాత్రమే, క్షేత్ర స్థాయి కొలత లేదా నిరూపితమైన వాస్తవం కాదు.',
+      activitySowing: '🌱 విత్తనాలు నాటడం',
+      activityIrrigation: '💧 నీటిపారుదల',
+      activityFertilizer: '🧪 ఎరువులు వేయడం',
+      activityPest: '🐛 తెగులు పరిశీలన',
+      activityPesticide: '🧴 పురుగుమందు పిచికారీ',
+      activityHarvest: '🌾 పంట కోత',
     },
     sources: {
       farmer_reported: 'రైతు నమోదు చేసినది',
+      farmer_voice: 'రైతు వాయిస్ రికార్డింగ్',
       ai_extracted: 'AI ద్వారా స్వీకరించబడింది',
+      ai_estimated: 'AI అంచనా వేసినది',
+      receipt_verified: 'రసీదు ద్వారా ధృవీకరించబడింది',
+      camera_product: 'కెమెరా ప్రొడక్ట్ స్కాన్',
+      gps_captured: 'GPS పొలం స్థానం',
+      weather_data: 'వాతావరణ కేంద్రం సమాచారం',
+      soil_report: 'నేల పరీక్ష నివేదిక',
       farmer_confirmed: 'రైతు నిర్ధారించారు',
       verified_document: 'ధృవీకృత పత్రం',
       demo_data: 'డెమో సమాచారం',
@@ -677,6 +722,7 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
     statuses: {
       draft: 'డ్రాఫ్ట్ (ముసాయిదా)',
       pending_confirmation: 'నిర్ధారణ పెండింగ్‌లో ఉంది',
+      pending_ai_processing: 'AI ప్రాసెసింగ్ పెండింగ్‌లో ఉంది',
       farmer_confirmed: 'రైతు ధృవీకరించారు',
       conflicting: 'విరుద్ధమైన సమాచారం',
       demo: 'డెమో సమాచారం',
@@ -1094,10 +1140,32 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       plotLabel: 'Plot',
       dateLabel: 'Activity Date',
       unitLabel: 'Unit',
+      cropMemoryTitle: 'Digital Farm Memory · Crop Cycle',
+      whatHaveIDone: 'What have I done on this crop so far?',
+      cropCycleSummary: 'Crop Cycle Summary',
+      activitiesSoFar: 'Activities So Far',
+      totalInvestedCost: 'Total Invested Cost',
+      inputsApplied: 'Inputs Applied',
+      evidenceAttached: 'Evidence Attached',
+      notFactDisclaimer: 'AI Estimate · Not a verified fact',
+      estimateNotice: 'Notice: This is an AI estimate and not an established field fact.',
+      activitySowing: '🌱 Sowing',
+      activityIrrigation: '💧 Irrigation',
+      activityFertilizer: '🧪 Fertilizer',
+      activityPest: '🐛 Pest Observation',
+      activityPesticide: '🧴 Pesticide / Spray',
+      activityHarvest: '🌾 Harvest',
     },
     sources: {
       farmer_reported: 'Farmer Reported',
+      farmer_voice: 'Farmer Voice',
       ai_extracted: 'AI Extracted',
+      ai_estimated: 'AI Estimated',
+      receipt_verified: 'Receipt Verified',
+      camera_product: 'Camera Product Capture',
+      gps_captured: 'GPS Captured',
+      weather_data: 'Weather Data',
+      soil_report: 'Soil Report',
       farmer_confirmed: 'Farmer Confirmed',
       verified_document: 'Verified Document',
       demo_data: 'Demo Data',
@@ -1106,6 +1174,7 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
     statuses: {
       draft: 'Draft',
       pending_confirmation: 'Pending Confirmation',
+      pending_ai_processing: 'Pending AI Processing',
       farmer_confirmed: 'Farmer Confirmed',
       conflicting: 'Conflicting Records',
       demo: 'Demo Record',
@@ -1523,10 +1592,32 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       plotLabel: 'प्लॉट',
       dateLabel: 'कार्य की तारीख',
       unitLabel: 'इकाई',
+      cropMemoryTitle: 'डिजिटल फार्म मेमोरी · फसल चक्र',
+      whatHaveIDone: 'अब तक मैंने इस फसल पर क्या किया है?',
+      cropCycleSummary: 'फसल चक्र समग्र सारांश',
+      activitiesSoFar: 'अब तक की गतिविधियां',
+      totalInvestedCost: 'कुल निवेशित लागत',
+      inputsApplied: 'प्रयुक्त इनपुट / सामग्री',
+      evidenceAttached: 'संलग्न साक्ष्य',
+      notFactDisclaimer: 'AI अनुमान · सत्यापित तथ्य नहीं',
+      estimateNotice: 'सूचना: यह केवल AI अनुमान है, सत्यापित तथ्य नहीं।',
+      activitySowing: '🌱 बुवाई',
+      activityIrrigation: '💧 सिंचाई',
+      activityFertilizer: '🧪 खाद',
+      activityPest: '🐛 कीट अवलोकन',
+      activityPesticide: '🧴 कीटनाशक छिड़काव',
+      activityHarvest: '🌾 कटाई',
     },
     sources: {
       farmer_reported: 'किसान द्वारा दर्ज',
+      farmer_voice: 'किसान वॉइस रिकॉर्डिंग',
       ai_extracted: 'AI द्वारा निकाला गया',
+      ai_estimated: 'AI अनुमानित',
+      receipt_verified: 'रसीद द्वारा सत्यापित',
+      camera_product: 'कैमरा उत्पाद स्कैन',
+      gps_captured: 'GPS खेत स्थिति',
+      weather_data: 'मौसम केंद्र डेटा',
+      soil_report: 'मृदा परीक्षण रिपोर्ट',
       farmer_confirmed: 'किसान द्वारा पुष्ट',
       verified_document: 'सत्यापित दस्तावेज़',
       demo_data: 'डेमो डेटा',
@@ -1535,6 +1626,7 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
     statuses: {
       draft: 'ड्राफ्ट',
       pending_confirmation: 'पुष्टि लंबित',
+      pending_ai_processing: 'AI प्रसंस्करण लंबित',
       farmer_confirmed: 'किसान द्वारा पुष्ट',
       conflicting: 'विरोधाभासी रिकॉर्ड',
       demo: 'डेमो रिकॉर्ड',

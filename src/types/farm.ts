@@ -14,8 +14,15 @@ export type TrustStatus =
 
 export type EventSource =
   | 'farmer_reported' // Manually reported by farmer via form or 1-tap quick action
-  | 'ai_extracted' // Extracted from speech/audio using rule-based parser
-  | 'verified_document' // Document/lab backed record
+  | 'farmer_voice' // Captured via farmer voice interaction
+  | 'ai_extracted' // Extracted from speech/audio or multimodal input using AI/rule-based engine
+  | 'ai_estimated' // Estimated by AI model (flagged clearly as estimate)
+  | 'receipt_verified' // Verified with scanned receipt / invoice
+  | 'camera_product' // Captured via camera inspection of input product/package
+  | 'gps_captured' // Field coordinates captured via GPS
+  | 'weather_data' // Weather service recorded
+  | 'soil_report' // Laboratory soil test backed
+  | 'verified_document' // General document/lab backed record
   | 'demo_data' // Pre-seeded fictional demo record
   | 'unknown'
   | 'farmer_confirmed'; // Backwards-compatible legacy value; new confirmations preserve original capture source
@@ -23,10 +30,12 @@ export type EventSource =
 export type RecordStatus =
   | 'draft'
   | 'pending_confirmation'
+  | 'pending_ai_processing' // Offline capture awaiting AI processing
   | 'farmer_confirmed'
   | 'conflicting'
   | 'demo'
   | 'demo_incomplete'
+  | 'estimated'
   | 'unknown';
 
 export type SyncState = 'online' | 'offline' | 'pending_sync' | 'sync_completed';
@@ -146,12 +155,65 @@ export type FarmEventType =
   | 'sale'
   | 'other';
 
+export interface ProductInspectionDetails {
+  productName: string | null;
+  manufacturer: string | null;
+  activeIngredient: string | null;
+  batchNumber: string | null;
+  expiryDate: string | null;
+  clarityIssue?: string | null;
+}
+
+export interface ReceiptInspectionDetails {
+  seller: string | null;
+  date: string | null;
+  product: string | null;
+  quantity: number | null;
+  unit: string | null;
+  amount: number | null;
+  currency: string;
+}
+
+export interface GpsCoordinatesEvidence {
+  latitude: number;
+  longitude: number;
+  accuracyMeters?: number;
+  capturedAt?: string;
+  locationName?: string;
+}
+
+export interface WeatherDataEvidence {
+  condition: string;
+  temperatureC?: number;
+  rainfallMm?: number;
+  humidityPercent?: number;
+  recordedAt?: string;
+  sourceStation?: string;
+}
+
+export interface SoilReportEvidence {
+  sampleId: string;
+  labName: string;
+  testDate?: string;
+  ph?: number;
+  nitrogenKgPerHa?: number;
+  phosphorusKgPerHa?: number;
+  potassiumKgPerHa?: number;
+  recommendation?: string;
+}
+
 export interface FarmEventEvidence {
-  type: 'photo' | 'receipt' | 'audio_note' | 'lab_report' | 'none';
+  type: 'photo' | 'receipt' | 'audio_note' | 'lab_report' | 'gps' | 'weather' | 'soil_test' | 'none';
   label?: string;
   uri?: string;
   notes?: string;
   isDocumentVerified?: boolean;
+  productDetails?: ProductInspectionDetails;
+  receiptDetails?: ReceiptInspectionDetails;
+  gpsCoords?: GpsCoordinatesEvidence;
+  weatherData?: WeatherDataEvidence;
+  soilReport?: SoilReportEvidence;
+  isSimulatedAi?: boolean;
 }
 
 export interface FarmEvent {
@@ -167,12 +229,13 @@ export interface FarmEvent {
   recordedDate: string; // ISO
   title: string;
   description?: string;
+  inputName?: string; // Specific input (e.g., 'Urea', 'Product X', 'Drip irrigation', 'BPT-5204 Seeds')
   quantity?: number | null;
   unit?: string | null;
   areaCoveredAcres?: number | null;
   cost?: number | null;
   currency: string;
-  source: EventSource; // Original capture source (e.g. ai_extracted, farmer_reported)
+  source: EventSource; // Original capture source (e.g. ai_extracted, farmer_reported, ai_estimated)
   originalSource?: EventSource; // Preserved initial source
   status: RecordStatus; // Lifecycle / confirmation status (e.g. pending_confirmation, farmer_confirmed)
   verificationStatus: TrustStatus; // Independent verification level (e.g. unverified, pending, confirmed)
@@ -181,6 +244,8 @@ export interface FarmEvent {
   rawTranscript?: string; // Captured voice transcript note
   evidence: FarmEventEvidence;
   confidence?: number; // 0 - 1 (only when supported by real speech recognition or sensor metrics)
+  isEstimate?: boolean; // When true, clearly displayed as an AI estimate to avoid presenting estimates as facts
+  estimateRationale?: string;
   createdBy: string;
   confirmedBy?: string;
   confirmedAt?: string;

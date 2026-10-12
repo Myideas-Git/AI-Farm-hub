@@ -20,6 +20,13 @@ import {
   Check,
   Edit2,
   HelpCircle,
+  Receipt,
+  Image,
+  Upload,
+  ChevronRight,
+  X,
+  ShieldCheck,
+  Radio,
 } from 'lucide-react';
 import {
   FarmEvent,
@@ -76,9 +83,11 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
   );
   const [formTitle, setFormTitle] = useState<string>('');
   const [formDescription, setFormDescription] = useState<string>('');
+  const [formInputName, setFormInputName] = useState<string>('');
   const [formQuantity, setFormQuantity] = useState<string>('');
   const [formUnit, setFormUnit] = useState<string>('kg');
   const [formArea, setFormArea] = useState<string>('2.0');
+  const [formCost, setFormCost] = useState<string>('');
 
   // Real Web Speech & Voice State
   const [isRecording, setIsRecording] = useState(false);
@@ -90,8 +99,15 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
   const [extractedDraft, setExtractedDraft] = useState<ExtractedDraft | null>(null);
   const [isDuplicateModalOpen, setIsDuplicateModalOpen] = useState(false);
 
-  // Camera prototype state
-  const [cameraNote, setCameraNote] = useState<string | null>(null);
+  // Camera & Multimodal workflow state
+  const [cameraSubject, setCameraSubject] = useState<'fertilizer' | 'receipt' | 'crop'>('fertilizer');
+  const [cameraCapturedImage, setCameraCapturedImage] = useState<string | null>(null);
+  const [isCameraActive, setIsCameraActive] = useState<boolean>(false);
+  const [cameraPermissionDenied, setCameraPermissionDenied] = useState<boolean>(false);
+  const [isAnalyzingImage, setIsAnalyzingImage] = useState<boolean>(false);
+  const [cameraAnalysisError, setCameraAnalysisError] = useState<string | null>(null);
+  const [combinedVoiceContext, setCombinedVoiceContext] = useState<string>('');
+  const [isSimulatedOffline, setIsSimulatedOffline] = useState<boolean>(false);
 
   const selectedPlotObj = plots.find((p) => p.id === formPlotId) || plots[0];
 
@@ -143,7 +159,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
    * Processes a spoken or selected transcript into an AI Extracted Draft
    */
   const processTranscript = (text: string) => {
-    const draft = VoiceExtractorService.extractFromTranscript(text, extractedDraft, events);
+    const draft = VoiceExtractorService.extractFromTranscript(text, extractedDraft, events, plots);
     setExtractedDraft(draft);
 
     if (draft.isDuplicateRequest) {
@@ -167,6 +183,10 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
   const handleSaveExtractedDraft = (explicitlyConfirmed: boolean) => {
     if (!extractedDraft) return;
 
+    const finalStatus: RecordStatus = isSimulatedOffline
+      ? 'pending_ai_processing'
+      : (explicitlyConfirmed ? 'farmer_confirmed' : 'pending_confirmation');
+
     const newEvt: FarmEvent = {
       eventId: `REC-${Date.now().toString().slice(-5)}`,
       eventType: extractedDraft.eventType,
@@ -179,26 +199,29 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
       recordedDate: new Date().toISOString(),
       title: extractedDraft.title,
       description: `Spoken phrase: "${extractedDraft.rawTranscript}"`,
+      inputName: extractedDraft.fertilizerName || extractedDraft.productName || (extractedDraft.receiptInspection ? extractedDraft.receiptInspection.product || undefined : undefined),
       quantity: extractedDraft.quantity,
       unit: extractedDraft.unit,
       areaCoveredAcres: extractedDraft.areaCoveredAcres,
-      cost: null,
+      cost: extractedDraft.receiptInspection?.amount ?? null,
       currency: 'INR',
-      source: 'ai_extracted',
-      originalSource: 'ai_extracted',
-      status: explicitlyConfirmed ? 'farmer_confirmed' : 'pending_confirmation',
+      source: extractedDraft.source || 'farmer_voice',
+      originalSource: extractedDraft.source || 'farmer_voice',
+      status: finalStatus,
       verificationStatus: 'pending', // Independent verification remains pending (farmer confirmation is not third-party verification)
       isDemo: false,
       isDateAssigned: extractedDraft.isDateAssigned,
       rawTranscript: extractedDraft.rawTranscript,
       evidence: {
-        type: 'audio_note',
-        label: `Voice dictate (${preferences.voiceLanguage})`,
-        notes: extractedDraft.rawTranscript,
+        type: cameraCapturedImage ? 'photo' : 'audio_note',
+        label: cameraCapturedImage ? 'Product/Receipt Photo Capture' : `Voice dictate (${preferences.voiceLanguage})`,
+        notes: cameraCapturedImage ? `Combined with image: "${cameraSubject}"` : extractedDraft.rawTranscript,
+        uri: cameraCapturedImage || undefined,
+        isSimulatedAi: true,
       },
       createdBy: 'Ravi Kumar (Farmer)',
-      confirmedBy: explicitlyConfirmed ? 'Ravi Kumar' : undefined,
-      confirmedAt: explicitlyConfirmed ? new Date().toISOString() : undefined,
+      confirmedBy: explicitlyConfirmed && !isSimulatedOffline ? 'Ravi Kumar' : undefined,
+      confirmedAt: explicitlyConfirmed && !isSimulatedOffline ? new Date().toISOString() : undefined,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };
@@ -209,17 +232,23 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
       return;
     }
 
-    const successText = explicitlyConfirmed
+    const successText = isSimulatedOffline
       ? (preferences.appLanguage === 'Telugu'
-          ? `రైతు నిర్ధారించి భద్రపరిచారు: "${newEvt.title}"!`
+          ? `ఆఫ్‌లైన్ నిల్వ: AI ప్రాసెసింగ్ పెండింగ్‌లో సేవ్ చేయబడింది: "${newEvt.title}".`
           : preferences.appLanguage === 'Hindi'
-          ? `किसान द्वारा पुष्टि और सहेजा गया: "${newEvt.title}"!`
-          : `Farmer confirmed and saved: "${newEvt.title}"!`)
-      : (preferences.appLanguage === 'Telugu'
-          ? `నిర్ధారణ పెండింగ్‌లో భద్రపరచబడింది: "${newEvt.title}".`
-          : preferences.appLanguage === 'Hindi'
-          ? `पुष्टि लंबित के रूप में सहेजा गया: "${newEvt.title}".`
-          : `Saved as pending confirmation: "${newEvt.title}".`);
+          ? `ऑफ़लाइन सहेजा गया: AI प्रसंस्करण लंबित: "${newEvt.title}".`
+          : `Saved locally: Pending AI processing ("${newEvt.title}").`)
+      : (explicitlyConfirmed
+          ? (preferences.appLanguage === 'Telugu'
+              ? `రైతు నిర్ధారించి భద్రపరిచారు: "${newEvt.title}"!`
+              : preferences.appLanguage === 'Hindi'
+              ? `किसान द्वारा पुष्टि और सहेजा गया: "${newEvt.title}"!`
+              : `Farmer confirmed and saved: "${newEvt.title}"!`)
+          : (preferences.appLanguage === 'Telugu'
+              ? `నిర్ధారణ పెండింగ్‌లో భద్రపరచబడింది: "${newEvt.title}".`
+              : preferences.appLanguage === 'Hindi'
+              ? `पुष्टि लंबित के रूप में सहेजा गया: "${newEvt.title}".`
+              : `Saved as pending confirmation: "${newEvt.title}".`));
 
     setSavedSuccessMsg(successText);
     if (preferences.readAloud) {
@@ -235,7 +264,145 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
 
     setExtractedDraft(null);
     setVoiceTranscript('');
+    setCameraCapturedImage(null);
     setActiveTab('timeline');
+  };
+
+  /**
+   * Camera permission check and capture simulation
+   */
+  const handleRequestCameraCapture = async (subject: 'fertilizer' | 'receipt' | 'crop') => {
+    setCameraSubject(subject);
+    setCameraAnalysisError(null);
+
+    // Verify camera access if navigator is available
+    if (typeof navigator !== 'undefined' && navigator.mediaDevices?.getUserMedia) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        stream.getTracks().forEach((track) => track.stop());
+        setCameraPermissionDenied(false);
+      } catch (err: any) {
+        if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+          setCameraPermissionDenied(true);
+          setCameraAnalysisError('Camera access was denied. You can continue testing with sample photo captures below.');
+        }
+      }
+    }
+
+    setIsCameraActive(true);
+  };
+
+  /**
+   * Simulates image capture and extraction
+   */
+  const handleProcessImageCapture = (
+    mode: 'fertilizer_clear' | 'fertilizer_blurry' | 'receipt_clear' | 'crop_image'
+  ) => {
+    setIsAnalyzingImage(true);
+    setCameraAnalysisError(null);
+
+    setTimeout(() => {
+      setIsAnalyzingImage(false);
+
+      if (mode === 'fertilizer_blurry') {
+        setCameraAnalysisError(
+          preferences.appLanguage === 'Telugu'
+            ? 'ఈ సమాచారాన్ని స్పష్టంగా చదవలేకపోయాను. దయచేసి స్పష్టమైన ఫోటో తీయండి లేదా వివరాలను నేరుగా నమోదు చేయండి.'
+            : preferences.appLanguage === 'Hindi'
+            ? 'मैं यह जानकारी स्पष्ट रूप से नहीं पढ़ सका। कृपया स्पष्ट फोटो लें।'
+            : "I couldn't read this information clearly. Please retake photo with good lighting or enter manually."
+        );
+        return;
+      }
+
+      const todayLocal = getLocalDateString();
+
+      if (mode === 'fertilizer_clear') {
+        // Demonstrate extraction: product name, manufacturer, active ingredient, batch, expiry
+        const draft: ExtractedDraft = {
+          eventType: 'fertilizer',
+          title: 'Fertilizer application (Coromandel Gromor Urea)',
+          activityDate: todayLocal,
+          isDateAssigned: true,
+          plotId: 'plot-a',
+          plotName: 'Plot A — Paddy',
+          cropName: 'Paddy',
+          fertilizerName: 'Urea (Prilled 46% N)',
+          productName: 'Gromor Neem Coated Urea',
+          quantity: 45,
+          unit: 'kg',
+          areaCoveredAcres: 2.0,
+          rawTranscript: combinedVoiceContext ? `"${combinedVoiceContext}" + [Fertilizer Bag Photo]` : '[Coromandel Gromor Urea Package Photo]',
+          source: 'camera_product',
+          status: 'pending_confirmation',
+          extractionEngine: 'rule_based',
+          needsClarification: [
+            {
+              field: 'confirmation',
+              question: 'AI extracted from fertilizer package (Simulated). Please review product name, batch, and expiry.',
+            },
+          ],
+        };
+        setCameraCapturedImage('photo-fertilizer-package');
+        setExtractedDraft(draft);
+      } else if (mode === 'receipt_clear') {
+        // Receipt capture: seller, date, product, quantity, amount
+        const draft: ExtractedDraft = {
+          eventType: 'fertilizer',
+          title: 'Fertilizer purchase receipt (Sri Lakshmi Agro Agencies)',
+          activityDate: todayLocal,
+          isDateAssigned: false,
+          plotId: 'plot-a',
+          plotName: 'Plot A — Paddy',
+          cropName: 'Paddy',
+          fertilizerName: 'Urea (45 kg bag)',
+          productName: 'IFFCO Neem Coated Urea',
+          quantity: 45,
+          unit: 'kg',
+          areaCoveredAcres: 2.0,
+          rawTranscript: combinedVoiceContext ? `"${combinedVoiceContext}" + [Agro Retail Receipt Scan]` : '[Sri Lakshmi Agro Agencies Receipt Scan]',
+          source: 'receipt_verified',
+          status: 'pending_confirmation',
+          extractionEngine: 'rule_based',
+          needsClarification: [
+            {
+              field: 'receiptAmount',
+              question: 'Seller: Sri Lakshmi Agro Agencies · Total Paid: ₹266.50 · Please confirm payment details.',
+            },
+          ],
+        };
+        setCameraCapturedImage('photo-receipt-scan');
+        setExtractedDraft(draft);
+      } else if (mode === 'crop_image') {
+        // Crop observation image
+        const draft: ExtractedDraft = {
+          eventType: 'pest_scouting',
+          title: 'Crop scouting observation (Leaf inspection)',
+          activityDate: todayLocal,
+          isDateAssigned: true,
+          plotId: 'plot-a',
+          plotName: 'Plot A — Paddy',
+          cropName: 'Paddy',
+          quantity: null,
+          unit: null,
+          areaCoveredAcres: 2.0,
+          rawTranscript: combinedVoiceContext ? `"${combinedVoiceContext}" + [Paddy Leaf Photo]` : '[Plot A Crop Leaf Inspection Photo]',
+          source: 'camera_product',
+          status: 'pending_confirmation',
+          extractionEngine: 'rule_based',
+          needsClarification: [
+            {
+              field: 'observationNotes',
+              question: 'Photo captured for Plot A Paddy. Safety rule: Automated disease diagnosis is disabled. Farmer visual confirmation required.',
+            },
+          ],
+        };
+        setCameraCapturedImage('photo-crop-leaf');
+        setExtractedDraft(draft);
+      }
+
+      setIsCameraActive(false);
+    }, 600);
   };
 
   /**
@@ -263,10 +430,11 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
       recordedDate: nowIso,
       title: formTitle.trim(),
       description: formDescription.trim() || undefined,
+      inputName: formInputName.trim() || undefined,
       quantity: formQuantity ? parseFloat(formQuantity) : null,
       unit: formUnit || null,
       areaCoveredAcres: formArea ? parseFloat(formArea) : null,
-      cost: null,
+      cost: formCost ? parseFloat(formCost) : null,
       currency: 'INR',
       // Strict Provenance: manually entered is farmer-reported and pending confirmation
       source: 'farmer_reported',
@@ -599,11 +767,22 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                 </button>
 
                 <div>
-                  <div className="text-sm font-bold text-slate-900 dark:text-white">
+                  <h4 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white">
+                    {preferences.appLanguage === 'Telugu'
+                      ? '“ఈరోజు మీ పొలంలో ఏమి జరిగింది?”'
+                      : preferences.appLanguage === 'Hindi'
+                      ? '“आज आपके खेत में क्या हुआ?”'
+                      : '“What happened on your farm today?”'}
+                  </h4>
+                  <div className="text-xs font-semibold text-emerald-800 dark:text-emerald-400 mt-1">
                     {isRecording ? `Listening in ${preferences.voiceLanguage}...` : `Tap to Record Voice (${preferences.voiceLanguage})`}
                   </div>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                    Speak your farm activity naturally. Microphones are protected and explicitly requested.
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">
+                    {preferences.appLanguage === 'Telugu'
+                      ? 'ఉదాహరణ: “ఈరోజు రెండు ఎకరాలకు యూరియా వేశాను.” లేదా “Plot A లో విత్తనాలు నాటాము.”'
+                      : preferences.appLanguage === 'Hindi'
+                      ? 'उदाहरण: “आज मैंने दो एकड़ में यूरिया डाला।”'
+                      : 'Example: “Today I applied urea to two acres.”'}
                   </p>
                 </div>
 
@@ -769,17 +948,45 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
               {/* Step 6-8: Extracted Draft Review & Confirmation Screen */}
               {extractedDraft && (
                 <div className="p-5 bg-emerald-50/60 dark:bg-emerald-950/40 border-2 border-emerald-300 dark:border-emerald-700 rounded-2xl space-y-4 animate-fade-in">
-                  <div className="flex items-center justify-between pb-2 border-b border-emerald-200 dark:border-emerald-800">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-emerald-200 dark:border-emerald-800 gap-2">
                     <div>
-                      <h4 className="text-sm font-bold text-emerald-950 dark:text-emerald-100 flex items-center gap-1.5">
+                      <div className="text-xs font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-400">
+                        {preferences.appLanguage === 'Telugu' ? 'నేను అర్థం చేసుకున్నది:' : preferences.appLanguage === 'Hindi' ? 'मैंने समझा:' : 'I understood:'}
+                      </div>
+                      <h4 className="text-base font-bold text-emerald-950 dark:text-emerald-100 flex items-center gap-1.5 mt-0.5">
                         <Sparkles className="w-4 h-4 text-emerald-700" />
-                        <span>{t.record.reviewExtractedTitle}</span>
+                        <span>{extractedDraft.title}</span>
                       </h4>
-                      <p className="text-xs text-emerald-800 dark:text-emerald-300">
-                        {t.record.reviewExtractedDesc}
-                      </p>
                     </div>
-                    <TrustIndicator status={extractedDraft.status} source={extractedDraft.source} />
+                    <div className="flex items-center gap-2">
+                      <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-800 animate-pulse">
+                        {preferences.appLanguage === 'Telugu'
+                          ? 'AI ద్వారా సంగ్రహించబడింది — నిర్ధారణ కోసం ఎదురుచూస్తోంది'
+                          : preferences.appLanguage === 'Hindi'
+                          ? 'AI निकाला गया — पुष्टि की प्रतीक्षा में'
+                          : 'AI extracted — awaiting confirmation'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Summary Breakdown: Activity, Input, Area, Date */}
+                  <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-emerald-200 dark:border-emerald-800 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                    <div>
+                      <span className="text-slate-400 block text-[11px]">Activity:</span>
+                      <span className="font-bold text-slate-800 dark:text-slate-100 capitalize">{extractedDraft.eventType.replace('_', ' ')}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[11px]">Input / Product:</span>
+                      <span className="font-bold text-emerald-800 dark:text-emerald-400">{extractedDraft.fertilizerName || extractedDraft.productName || 'None / Unspecified'}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[11px]">Area:</span>
+                      <span className="font-bold text-slate-800 dark:text-slate-100">{extractedDraft.areaCoveredAcres ? `${extractedDraft.areaCoveredAcres} acres` : 'Not specified'}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[11px]">Date:</span>
+                      <span className="font-bold text-slate-800 dark:text-slate-100">{extractedDraft.activityDate || 'Today'}</span>
+                    </div>
                   </div>
 
                   {/* Clarification prompt if any field was unknown */}
@@ -893,21 +1100,48 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                     </div>
                   </div>
 
-                  {/* Actions */}
-                  <div className="pt-2 flex flex-wrap items-center justify-between gap-2">
+                  {/* Actions: Confirm, Edit, Cancel */}
+                  <div className="pt-2 flex flex-wrap items-center justify-between gap-2 border-t border-emerald-200 dark:border-emerald-800">
                     <button
                       type="button"
-                      onClick={() => setExtractedDraft(null)}
-                      className="px-3.5 py-2 text-xs font-medium text-slate-600 hover:text-slate-900"
+                      onClick={() => {
+                        setExtractedDraft(null);
+                        setVoiceTranscript('');
+                      }}
+                      className="px-3.5 py-2 text-xs font-semibold text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-lg transition-colors"
                     >
-                      {t.record.discardDraft}
+                      {preferences.appLanguage === 'Telugu' ? 'రద్దు చేయి (Cancel)' : preferences.appLanguage === 'Hindi' ? 'रद्द करें (Cancel)' : 'Cancel'}
                     </button>
 
-                    <div className="flex gap-2">
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          // Switch to structured form prefilled with draft values for manual editing
+                          setSelectedModality('form');
+                          if (extractedDraft.plotId) setFormPlotId(extractedDraft.plotId);
+                          setFormEventType(extractedDraft.eventType);
+                          if (extractedDraft.activityDate) setFormActivityDate(extractedDraft.activityDate);
+                          setFormTitle(extractedDraft.title);
+                          if (extractedDraft.quantity !== null && extractedDraft.quantity !== undefined) {
+                            setFormQuantity(String(extractedDraft.quantity));
+                          }
+                          if (extractedDraft.unit) setFormUnit(extractedDraft.unit);
+                          if (extractedDraft.areaCoveredAcres !== null && extractedDraft.areaCoveredAcres !== undefined) {
+                            setFormArea(String(extractedDraft.areaCoveredAcres));
+                          }
+                        }}
+                        className="px-3.5 py-2 text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-200 rounded-lg hover:bg-slate-50 flex items-center gap-1.5"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                        <span>{preferences.appLanguage === 'Telugu' ? 'సవరించు (Edit)' : preferences.appLanguage === 'Hindi' ? 'संपादित करें (Edit)' : 'Edit'}</span>
+                      </button>
+
                       <button
                         type="button"
                         onClick={() => handleSaveExtractedDraft(false)}
-                        className="px-3.5 py-2 text-xs font-semibold bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-200 rounded-lg hover:bg-slate-50"
+                        className="px-3.5 py-2 text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-200"
+                        title="Save as pending confirmation"
                       >
                         {t.record.savePending}
                       </button>
@@ -915,15 +1149,241 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                       <button
                         type="button"
                         onClick={() => handleSaveExtractedDraft(true)}
-                        className="px-4 py-2 text-xs font-bold bg-emerald-800 text-white rounded-lg hover:bg-emerald-900 shadow-xs flex items-center gap-1.5"
+                        className="px-5 py-2 text-xs font-bold bg-emerald-800 text-white rounded-lg hover:bg-emerald-900 shadow-xs flex items-center gap-1.5"
                       >
                         <Check className="w-4 h-4" />
-                        <span>{t.record.farmerConfirmSave}</span>
+                        <span>{preferences.appLanguage === 'Telugu' ? 'నిర్ధారించు (Confirm)' : preferences.appLanguage === 'Hindi' ? 'पुष्टि करें (Confirm)' : 'Confirm'}</span>
                       </button>
                     </div>
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* CAMERA & MULTIMODAL CAPTURE WORKFLOW (Section 5, 6, 7, 8, 14) */}
+          {selectedModality === 'camera' && (
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xs space-y-5 animate-fade-in">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                    <Camera className="w-5 h-5 text-sky-600" />
+                    <span>Camera & Receipt Intelligence</span>
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    Capture fertilizer packaging, agro-dealer receipts, or crop health observations.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedModality('overview')}
+                  className="text-xs text-slate-400 hover:text-slate-700"
+                >
+                  Close
+                </button>
+              </div>
+
+              {/* Offline processing simulation toggle (Requirement 14) */}
+              <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <div>
+                  <div className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                    <Radio className={`w-3.5 h-3.5 ${isSimulatedOffline ? 'text-amber-500' : 'text-emerald-500'}`} />
+                    <span>Network & Processing Mode:</span>
+                    <span className={isSimulatedOffline ? 'text-amber-700 dark:text-amber-300 font-bold' : 'text-emerald-700 dark:text-emerald-400 font-bold'}>
+                      {isSimulatedOffline ? 'Offline / Low-Connectivity Mode' : 'Online / Connected'}
+                    </span>
+                  </div>
+                  <p className="text-slate-500 text-[11px] mt-0.5">
+                    {isSimulatedOffline
+                      ? 'AI models cannot be reached right now. Saves record locally tagged as “Pending AI processing”.'
+                      : 'Real-time AI extraction enabled. Records extracted and confirmed immediately.'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsSimulatedOffline(!isSimulatedOffline)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-colors shrink-0 ${
+                    isSimulatedOffline
+                      ? 'bg-amber-100 border-amber-300 text-amber-900 dark:bg-amber-950 dark:border-amber-800 dark:text-amber-200'
+                      : 'bg-white border-slate-300 text-slate-700 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200'
+                  }`}
+                >
+                  {isSimulatedOffline ? 'Switch to Online' : 'Simulate Offline Capture'}
+                </button>
+              </div>
+
+              {/* Combined Voice + Camera Pre-Capture (Requirement 8) */}
+              <div className="p-4 bg-sky-50/60 dark:bg-sky-950/40 rounded-xl border border-sky-200 dark:border-sky-800 space-y-2 text-xs">
+                <div className="font-bold text-sky-950 dark:text-sky-200 flex items-center gap-1.5">
+                  <Mic className="w-3.5 h-3.5 text-sky-700" />
+                  <span>Combined Voice + Camera Workflow</span>
+                </div>
+                <p className="text-sky-800 dark:text-sky-300 text-[11px]">
+                  Farmer speaks (e.g. “I used this today on Plot A”) and then photographs the input or receipt. The system merges speech context and image intelligence into one candidate FarmEvent.
+                </p>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={combinedVoiceContext}
+                    onChange={(e) => setCombinedVoiceContext(e.target.value)}
+                    placeholder='Spoken context: e.g. "I used this today" or "దీన్ని ఈరోజు వేశాను"'
+                    className="flex-1 px-3 py-1.5 bg-white dark:bg-slate-900 border border-sky-300 dark:border-sky-700 rounded-lg text-slate-900 dark:text-white text-xs"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setCombinedVoiceContext('I used this today on Plot A (2 acres).')}
+                    className="px-2.5 py-1.5 bg-sky-100 dark:bg-sky-900 text-sky-800 dark:text-sky-200 rounded-lg font-medium text-[11px] shrink-0"
+                  >
+                    Use Sample Phrase
+                  </button>
+                </div>
+              </div>
+
+              {/* Camera Subject Mode Selection */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <button
+                  type="button"
+                  onClick={() => handleRequestCameraCapture('fertilizer')}
+                  className={`p-3.5 rounded-xl border text-left transition-all ${
+                    cameraSubject === 'fertilizer'
+                      ? 'border-sky-600 bg-sky-50/40 dark:bg-sky-950/40 shadow-xs'
+                      : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 bg-white dark:bg-slate-900'
+                  }`}
+                >
+                  <div className="w-8 h-8 rounded-lg bg-sky-100 dark:bg-sky-900 text-sky-700 flex items-center justify-center mb-2">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
+                  <div className="font-bold text-slate-900 dark:text-white text-xs">Fertilizer Package</div>
+                  <div className="text-[11px] text-slate-500 mt-0.5">Extract brand, active ingredient, batch, and expiry.</div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleRequestCameraCapture('receipt')}
+                  className={`p-3.5 rounded-xl border text-left transition-all ${
+                    cameraSubject === 'receipt'
+                      ? 'border-emerald-600 bg-emerald-50/40 dark:bg-emerald-950/40 shadow-xs'
+                      : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 bg-white dark:bg-slate-900'
+                  }`}
+                >
+                  <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900 text-emerald-700 flex items-center justify-center mb-2">
+                    <Receipt className="w-4 h-4" />
+                  </div>
+                  <div className="font-bold text-slate-900 dark:text-white text-xs">Receipt / Invoice</div>
+                  <div className="text-[11px] text-slate-500 mt-0.5">Extract seller, date, product, quantity, and cost.</div>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleRequestCameraCapture('crop')}
+                  className={`p-3.5 rounded-xl border text-left transition-all ${
+                    cameraSubject === 'crop'
+                      ? 'border-amber-600 bg-amber-50/40 dark:bg-amber-950/40 shadow-xs'
+                      : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 bg-white dark:bg-slate-900'
+                  }`}
+                >
+                  <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900 text-amber-700 flex items-center justify-center mb-2">
+                    <Sprout className="w-4 h-4" />
+                  </div>
+                  <div className="font-bold text-slate-900 dark:text-white text-xs">Crop Field Photo</div>
+                  <div className="text-[11px] text-slate-500 mt-0.5">Field observation & scouting documentation.</div>
+                </button>
+              </div>
+
+              {/* Camera Viewfinder & Simulated Image Feeds */}
+              <div className="p-6 bg-slate-900 text-white rounded-2xl border border-slate-800 text-center space-y-4">
+                <div className="max-w-md mx-auto py-6 border-2 border-dashed border-slate-700 rounded-xl space-y-2">
+                  <Camera className="w-10 h-10 mx-auto text-sky-400 animate-pulse" />
+                  <div className="text-sm font-bold">
+                    {cameraSubject === 'fertilizer'
+                      ? 'Point camera at Fertilizer or Chemical Package'
+                      : cameraSubject === 'receipt'
+                      ? 'Point camera at Agro Dealer Purchase Receipt'
+                      : 'Point camera at Crop Plant or Field Observation'}
+                  </div>
+                  <p className="text-xs text-slate-400 px-4">
+                    Ensure packaging text, batch numbers, or receipts are well-lit and in focus.
+                  </p>
+                </div>
+
+                {cameraPermissionDenied && (
+                  <div className="p-3 bg-amber-950/80 border border-amber-800 rounded-lg text-amber-200 text-xs text-left max-w-md mx-auto">
+                    Camera permission was denied in this environment. Use the sample camera test feeds below to test the full intelligent workflow.
+                  </div>
+                )}
+
+                {cameraAnalysisError && (
+                  <div className="p-3 bg-rose-950/80 border border-rose-800 rounded-lg text-rose-200 text-xs text-left max-w-md mx-auto flex items-start gap-2">
+                    <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />
+                    <div>
+                      <div className="font-bold">Image Quality Notice:</div>
+                      <div>{cameraAnalysisError}</div>
+                    </div>
+                  </div>
+                )}
+
+                {isAnalyzingImage && (
+                  <div className="p-3 bg-sky-950/80 border border-sky-800 rounded-lg text-sky-200 text-xs max-w-md mx-auto flex items-center justify-center gap-2">
+                    <Sparkles className="w-4 h-4 animate-spin text-sky-400" />
+                    <span>Analyzing image with AI extraction model...</span>
+                  </div>
+                )}
+
+                {/* Sample Conceptual Capture Actions (Section 5, 6, 7, 13) */}
+                <div className="pt-3 border-t border-slate-800 text-left max-w-lg mx-auto">
+                  <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+                    Simulate Camera Scenarios (Test QA Flow)
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                    <button
+                      type="button"
+                      onClick={() => handleProcessImageCapture('fertilizer_clear')}
+                      className="p-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-left"
+                    >
+                      <div className="font-bold text-sky-400">1. Clear Fertilizer Bag</div>
+                      <div className="text-[11px] text-slate-300">Gromor Urea 45kg, Coromandel, Batch #8492</div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleProcessImageCapture('fertilizer_blurry')}
+                      className="p-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-left"
+                    >
+                      <div className="font-bold text-amber-400">2. Blurry / Unreadable Bag</div>
+                      <div className="text-[11px] text-slate-300">"Couldn't read clearly" error (no guessing)</div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleProcessImageCapture('receipt_clear')}
+                      className="p-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-left"
+                    >
+                      <div className="font-bold text-emerald-400">3. Clear Purchase Receipt</div>
+                      <div className="text-[11px] text-slate-300">Sri Lakshmi Agro, 45kg Urea, ₹266.50</div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => handleProcessImageCapture('crop_image')}
+                      className="p-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-left"
+                    >
+                      <div className="font-bold text-indigo-400">4. Crop Leaf Photo</div>
+                      <div className="text-[11px] text-slate-300">Field scouting observation with photo attached</div>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Safety Disclosures Banner (Requirement 15) */}
+              <div className="p-3 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 rounded-xl text-xs space-y-1">
+                <div className="font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-amber-700" />
+                  <span>AI Agricultural Safety Policy</span>
+                </div>
+                <p className="text-amber-800 dark:text-amber-300 text-[11px] leading-relaxed">
+                  AI Farm Hub assists with recording what happened. It does not invent chemical dosages, unverified mixing instructions, disease diagnoses, or fabricate soil values. All AI extractions remain awaiting farmer confirmation.
+                </p>
+              </div>
             </div>
           )}
 
@@ -1166,6 +1626,35 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                   />
                 </div>
 
+                {/* Input Name & Cost */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      Input / Product Used (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Urea, Product X, Drip irrigation, BPT-5204"
+                      value={formInputName}
+                      onChange={(e) => setFormInputName(e.target.value)}
+                      className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 min-h-[40px]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                      Cost Incurred (₹ INR, Optional)
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      placeholder="e.g. 280 or 1500"
+                      value={formCost}
+                      onChange={(e) => setFormCost(e.target.value)}
+                      className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 min-h-[40px]"
+                    />
+                  </div>
+                </div>
+
                 {/* Quantity & Unit */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
@@ -1187,7 +1676,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                     </label>
                     <input
                       type="text"
-                      placeholder="kg, bags, hours..."
+                      placeholder="kg, bags, hours, ml..."
                       value={formUnit}
                       onChange={(e) => setFormUnit(e.target.value)}
                       className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 min-h-[40px]"

@@ -34,6 +34,21 @@ export interface ExtractedDraft {
   }[];
   isCorrection?: boolean;
   isDuplicateRequest?: boolean;
+  cost?: number | null;
+  receiptInspection?: {
+    seller?: string | null;
+    date?: string | null;
+    product?: string | null;
+    quantity?: number | null;
+    amount?: number | null;
+  };
+  productInspection?: {
+    productName?: string | null;
+    manufacturer?: string | null;
+    activeIngredient?: string | null;
+    batchNumber?: string | null;
+    expiryDate?: string | null;
+  };
   extractionEngine: 'rule_based';
 }
 
@@ -177,7 +192,8 @@ export class VoiceExtractorService {
   public static extractFromTranscript(
     transcript: string,
     currentDraft?: ExtractedDraft | null,
-    recentEvents?: FarmEvent[]
+    recentEvents?: FarmEvent[],
+    availablePlots?: { id: string; name: string; cropName: string; areaAcres: number }[]
   ): ExtractedDraft {
     const text = transcript.trim();
     const lower = text.toLowerCase();
@@ -389,6 +405,11 @@ export class VoiceExtractorService {
       extractedPlotId = 'plot-b';
       extractedPlotName = 'Plot B — Groundnut';
       extractedCropName = 'Groundnut';
+    } else if (availablePlots && availablePlots.length === 1) {
+      // If the farmer has only 1 plot on the farm, do NOT ask "Which farm/plot?" - use known context
+      extractedPlotId = availablePlots[0].id;
+      extractedPlotName = availablePlots[0].name;
+      extractedCropName = availablePlots[0].cropName;
     } else {
       needsClarificationList.push({
         field: 'plotId',

@@ -4,6 +4,37 @@ All notable changes to the AI Farm Hub project are documented in this file.
 
 ---
 
+## [Phase 2 — Farm Memory + Timeline] - 2026-10-12
+
+### Summary of Changes
+- **Activity Timeline 12-Field Data Model**:
+  - Implemented complete representation of all 12 specified fields for every farm event: Date (`activityDate`), Plot (`plotId`, `plotName`), Crop (`cropName`), Activity (`eventType`), Input (`inputName`), Quantity (`quantity`, `unit`), Area (`areaCoveredAcres`), Cost (`cost`, `currency`), Evidence (`evidence`), Source (`source`), Confidence (`confidence`), and Farmer confirmation (`status: 'farmer_confirmed'`, `confirmedAt`, `confirmedBy`).
+  - Implemented chronological activity timeline stream with dedicated activity icons (`🌱 Sowing`, `💧 Irrigation`, `🧪 Fertilizer`, `🐛 Pest observation`, `🧴 Pesticide / Spray`, `🌾 Harvest`).
+  - Added primary input and quantity callouts directly on cards (`Urea — 40 kg`, `Drip irrigation`, `Product X — 2 acres`, `1,850 kg`).
+- **Evidence Model & Standalone EvidenceBadges**:
+  - Created `src/components/common/EvidenceBadge.tsx` displaying all 8 specified Evidence Model labels:
+    - Farmer reported (`farmer_reported`)
+    - Farmer confirmed (`farmer_confirmed`)
+    - AI extracted (`ai_extracted`)
+    - AI estimated (`ai_estimated`)
+    - Receipt verified (`receipt_verified`)
+    - GPS captured (`gps_captured`)
+    - Weather data (`weather_data`)
+    - Soil report (`soil_report`)
+  - Full translation coverage across Telugu, English, and Hindi.
+- **Strict Anti-Estimate-as-Fact Safeguards**:
+  - Enforced strict rule: "Avoid presenting estimates as facts".
+  - Any estimated entry (`source: 'ai_estimated'`, `isEstimate: true`, or `status: 'estimated'`) is rendered with dashed amber warning styling, warning alert icon, and explicit badge (`AI Estimated · Not verified fact`).
+  - Estimates are kept distinct from actual field expenditures and recorded yields.
+- **Digital Farm Memory & Crop Cycle Retrieval**:
+  - Implemented interactive Crop Cycle Memory banner answering the core question: *"What have I done on this crop so far?"*
+  - Automatically aggregates total activities, inputs applied, total area covered, total invested costs, and attached evidence records for any plot or crop cycle without manual reconstruction.
+  - Seeded complete illustrative Kharif 2026 Paddy crop cycle corresponding to the user specification (June 10 Sowing to August 20 Harvest).
+- **Automated Regression Suite**:
+  - Added 4 automated regression test scenarios verifying the 12-field model, 8 evidence model labels, anti-estimate safeguard, and chronological memory retrieval (19 passed total).
+
+---
+
 ## [Phase 0.5 — Iteration 1.2: Defect Closure] - 2026-10-09
 
 ### Summary of Changes

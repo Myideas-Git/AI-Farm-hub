@@ -48,6 +48,14 @@ export const TrustIndicator: React.FC<TrustIndicatorProps> = ({
           dotColor: 'bg-amber-500',
           description: t.statuses.pending_confirmation,
         };
+      case 'pending_ai_processing':
+        return {
+          icon: Clock,
+          label: t.statuses.pending_ai_processing,
+          textColor: 'text-indigo-800 dark:text-indigo-300',
+          dotColor: 'bg-indigo-500',
+          description: t.statuses.pending_ai_processing,
+        };
       case 'draft':
         return {
           icon: FileText,

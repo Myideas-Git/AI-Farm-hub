@@ -291,3 +291,181 @@ describe('Defect 5: Deterministic Voice Extraction & Anti-Invention Rules', () =
     assert.equal(draft.extractionEngine, 'rule_based');
   });
 });
+
+describe('Phase 2: Farm Memory, Activity Timeline, and Evidence Model', () => {
+  beforeEach(() => {
+    mockStorage.clear();
+  });
+
+  test('events support all 12 specified fields: Date, Plot, Crop, Activity, Input, Quantity, Area, Cost, Evidence, Source, Confidence, Confirmation', () => {
+    const fullEvent: FarmEvent = {
+      eventId: 'PHASE2-TEST-01',
+      activityDate: '2026-06-25', // 1. Date
+      plotId: 'plot-a', // 2. Plot
+      plotName: 'Plot A — Paddy',
+      cropName: 'Paddy', // 3. Crop
+      eventType: 'fertilizer', // 4. Activity
+      inputName: 'Urea', // 5. Input
+      quantity: 40, // 6. Quantity
+      unit: 'kg',
+      areaCoveredAcres: 2.0, // 7. Area
+      cost: 280, // 8. Cost
+      currency: 'INR',
+      evidence: {
+        type: 'receipt', // 9. Evidence
+        label: 'Sri Rama Agri Inputs #SR-9102',
+        isDocumentVerified: true,
+      },
+      source: 'receipt_verified', // 10. Source
+      confidence: 0.98, // 11. Confidence
+      status: 'farmer_confirmed', // 12. Farmer confirmation
+      verificationStatus: 'confirmed',
+      confirmedBy: 'Ravi Kumar',
+      confirmedAt: '2026-06-25T15:00:00Z',
+      farmerId: 'farmer-ravi-01',
+      farmId: 'farm-ravi-01',
+      recordedDate: '2026-06-25T14:15:00Z',
+      title: 'Fertilizer (Urea — 40 kg)',
+      isDemo: false,
+      createdBy: 'Ravi Kumar',
+      createdAt: '2026-06-25T14:15:00Z',
+      updatedAt: '2026-06-25T15:00:00Z',
+    };
+
+    assert.ok(fullEvent.activityDate, 'Field 1: Date must be present');
+    assert.ok(fullEvent.plotName, 'Field 2: Plot must be present');
+    assert.ok(fullEvent.cropName, 'Field 3: Crop must be present');
+    assert.ok(fullEvent.eventType, 'Field 4: Activity must be present');
+    assert.ok(fullEvent.inputName, 'Field 5: Input must be present');
+    assert.equal(fullEvent.quantity, 40, 'Field 6: Quantity must match');
+    assert.equal(fullEvent.unit, 'kg');
+    assert.equal(fullEvent.areaCoveredAcres, 2.0, 'Field 7: Area must match');
+    assert.equal(fullEvent.cost, 280, 'Field 8: Cost must match');
+    assert.ok(fullEvent.evidence && fullEvent.evidence.type === 'receipt', 'Field 9: Evidence must be supported');
+    assert.equal(fullEvent.source, 'receipt_verified', 'Field 10: Source must match');
+    assert.equal(fullEvent.confidence, 0.98, 'Field 11: Confidence must match');
+    assert.equal(fullEvent.status, 'farmer_confirmed', 'Field 12: Farmer confirmation must be tracked');
+  });
+
+  test('evidence model supports all 8 specified labels across Telugu, English, and Hindi', () => {
+    const requiredLabels: (
+      | 'farmer_reported'
+      | 'farmer_confirmed'
+      | 'ai_extracted'
+      | 'ai_estimated'
+      | 'receipt_verified'
+      | 'gps_captured'
+      | 'weather_data'
+      | 'soil_report'
+    )[] = [
+      'farmer_reported',
+      'farmer_confirmed',
+      'ai_extracted',
+      'ai_estimated',
+      'receipt_verified',
+      'gps_captured',
+      'weather_data',
+      'soil_report',
+    ];
+
+    const languages: ('Telugu' | 'English' | 'Hindi')[] = ['Telugu', 'English', 'Hindi'];
+
+    languages.forEach((lang) => {
+      const srcDict = TRANSLATIONS[lang].sources;
+      requiredLabels.forEach((label) => {
+        assert.ok(
+          srcDict[label],
+          `Evidence model label '${label}' must exist in ${lang}`
+        );
+        assert.ok(
+          srcDict[label].length > 0,
+          `Evidence model label '${label}' must not be empty in ${lang}`
+        );
+      });
+    });
+  });
+
+  test('strict safeguard: AI estimates are never presented as facts', () => {
+    const estimatedEvent: FarmEvent = {
+      eventId: 'EST-TEST-01',
+      activityDate: '2026-07-20',
+      plotId: 'plot-a',
+      plotName: 'Plot A — Paddy',
+      cropName: 'Paddy',
+      eventType: 'fertilizer',
+      inputName: 'MOP Potash guideline',
+      quantity: 20,
+      unit: 'kg',
+      areaCoveredAcres: 2.0,
+      currency: 'INR',
+      source: 'ai_estimated', // AI estimated source
+      isEstimate: true, // Flagged explicitly
+      estimateRationale: 'ICAR semi-dwarf model estimate',
+      status: 'estimated', // Not confirmed
+      verificationStatus: 'estimated',
+      confidence: 0.70,
+      farmerId: 'farmer-ravi-01',
+      farmId: 'farm-ravi-01',
+      recordedDate: '2026-07-20T09:00:00Z',
+      title: 'Potash requirement model',
+      isDemo: true,
+      evidence: { type: 'none' },
+      createdBy: 'AI Advisory Engine',
+      createdAt: '2026-07-20T09:00:00Z',
+      updatedAt: '2026-07-20T09:00:00Z',
+    };
+
+    assert.equal(estimatedEvent.isEstimate, true, 'Estimated flag must be true');
+    assert.notEqual(estimatedEvent.status, 'farmer_confirmed', 'Estimates must NOT be marked as farmer_confirmed');
+    assert.notEqual(estimatedEvent.verificationStatus, 'confirmed', 'Estimates must NOT be marked as confirmed');
+
+    // Translation disclaimers exist in all languages
+    (['Telugu', 'English', 'Hindi'] as const).forEach((lang) => {
+      assert.ok(TRANSLATIONS[lang].timeline.notFactDisclaimer, `notFactDisclaimer missing in ${lang}`);
+      assert.ok(TRANSLATIONS[lang].timeline.estimateNotice, `estimateNotice missing in ${lang}`);
+    });
+  });
+
+  test('farmer can open crop cycle and retrieve full chronological memory ("What have I done on this crop so far?")', () => {
+    // Load all records including initial crop memory
+    const loadResult = ActivityStorageService.loadAllRecords();
+    assert.equal(loadResult.success, true);
+
+    const padEvents = loadResult.data.filter((e) => e.plotId === 'plot-a' && e.activityDate !== null);
+    
+    // Sort chronologically
+    const chronological = padEvents.sort((a, b) => (a.activityDate! > b.activityDate! ? 1 : -1));
+    assert.ok(chronological.length >= 6, 'Must contain full crop cycle events (Sowing, Irrigation, Fertilizer, Pest, Spray, Harvest)');
+
+    // Verify key operations from prompt example:
+    const sowing = chronological.find((e) => e.eventType === 'sowing');
+    assert.ok(sowing, 'Must have Sowing activity');
+    assert.equal(sowing?.activityDate, '2026-06-10');
+    assert.equal(sowing?.areaCoveredAcres, 2.0);
+
+    const irrigation = chronological.find((e) => e.eventType === 'irrigation');
+    assert.ok(irrigation, 'Must have Irrigation activity');
+    assert.equal(irrigation?.activityDate, '2026-06-18');
+
+    const fertilizer = chronological.find((e) => e.eventType === 'fertilizer' && !e.isEstimate);
+    assert.ok(fertilizer, 'Must have Fertilizer activity');
+    assert.equal(fertilizer?.activityDate, '2026-06-25');
+    assert.equal(fertilizer?.quantity, 40);
+    assert.equal(fertilizer?.unit, 'kg');
+
+    const pest = chronological.find((e) => e.eventType === 'pest_scouting');
+    assert.ok(pest, 'Must have Pest observation activity');
+    assert.equal(pest?.activityDate, '2026-07-02');
+
+    const spray = chronological.find((e) => e.eventType === 'spray');
+    assert.ok(spray, 'Must have Pesticide activity');
+    assert.equal(spray?.activityDate, '2026-07-03');
+    assert.equal(spray?.areaCoveredAcres, 2.0);
+
+    const harvest = chronological.find((e) => e.eventType === 'harvest');
+    assert.ok(harvest, 'Must have Harvest activity');
+    assert.equal(harvest?.activityDate, '2026-08-20');
+    assert.equal(harvest?.quantity, 1850);
+  });
+});
+

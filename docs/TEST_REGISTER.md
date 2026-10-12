@@ -9,8 +9,8 @@
 ## 1. Automated Test Execution Summary
 
 Command: `npm test` (`tsx --test src/tests/regression.test.ts`)
-Total Tests: **15 passed, 0 failed, 0 skipped**
-Execution Duration: **628 ms**
+Total Tests: **19 passed, 0 failed, 0 skipped**
+Execution Duration: **486 ms**
 
 | Test ID | Suite | Scenario | Test Inputs / Procedure | Expected Result | Actual Result | Status |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
@@ -31,6 +31,10 @@ Execution Duration: **628 ms**
 | **TEST-REG-13** | Defect 5: Voice/Date | Spoken "Yesterday" Recognition | Transcript: "నిన్న వరి పొలంలో నీళ్లు పెట్టాను" | `isDateAssigned: false`, date set to yesterday's local date | Yesterday parsed; `isDateAssigned: false` | **Tested—Passed** |
 | **TEST-REG-14** | Defect 5: Voice/Date | Spoken Correction Phrases | Transcript: "40 కాదు, 20 కిలోలు యూరియా" | `isCorrection: true`, `quantity: 20` | Adopts corrected quantity (20) | **Tested—Passed** |
 | **TEST-REG-15** | Defect 5: Voice/Date | Rule-Based Attribution | Inspect `extractionEngine` on extracted draft | Property is `'rule_based'` (never claims generative AI) | `extractionEngine === 'rule_based'` | **Tested—Passed** |
+| **TEST-PHASE2-01** | Phase 2: Memory & Timeline | 12-Field Event Model | Validate FarmEvent with Date, Plot, Crop, Activity, Input, Quantity, Area, Cost, Evidence, Source, Confidence, Confirmation | All 12 fields defined, validated, and accessible in timeline cards and modal | 12 fields fully present and tested | **Tested—Passed** |
+| **TEST-PHASE2-02** | Phase 2: Evidence Model | 8 Evidence Model Labels Parity | Validate 8 labels: Farmer reported, Farmer confirmed, AI extracted, AI estimated, Receipt verified, GPS captured, Weather data, Soil report | Present with complete translation in Telugu, English, Hindi | All 8 labels present in all 3 languages | **Tested—Passed** |
+| **TEST-PHASE2-03** | Phase 2: Evidence Model | Anti-Estimate-as-Fact Guard | Event with `source: 'ai_estimated'`, `isEstimate: true`, `status: 'estimated'` | Must not be marked confirmed or verified; disclaimer rendered | Disclaimers verified; estimates separated from facts | **Tested—Passed** |
+| **TEST-PHASE2-04** | Phase 2: Crop Memory | "What have I done on this crop so far?" | Retrieve Plot A Paddy crop cycle events chronologically | Returns Sowing (Jun 10), Irrigation (Jun 18), Fertilizer (Jun 25), Pest (Jul 02), Spray (Jul 03), Harvest (Aug 20) | Full sequence retrieved with inputs and metrics | **Tested—Passed** |
 
 ---
 

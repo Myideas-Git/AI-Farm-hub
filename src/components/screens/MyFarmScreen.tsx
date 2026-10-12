@@ -194,27 +194,67 @@ export const MyFarmScreen: React.FC<MyFarmScreenProps> = ({
 
           <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
             <span className="text-slate-500 dark:text-slate-400 text-[11px] block">{t.myFarm.sowingVariety}</span>
-            <span className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 block mt-0.5 italic">
-              {t.myFarm.varietyUnknown}
+            <span className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 block mt-0.5">
+              {activeCycle?.variety || t.myFarm.varietyUnknown}
             </span>
             <span className="text-[10px] text-slate-400 block mt-0.5">
-              {t.myFarm.sowingDateUnrecorded}
+              {activeCycle?.sowingDate
+                ? `${preferences?.appLanguage === 'Telugu' ? 'నాటిన తేదీ:' : preferences?.appLanguage === 'Hindi' ? 'बुवाई:' : 'Sown:'} ${activeCycle.sowingDate}`
+                : t.myFarm.sowingDateUnrecorded}
             </span>
           </div>
 
           <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
             <span className="text-slate-500 dark:text-slate-400 text-[11px] block">{t.myFarm.yieldTargetActual}</span>
-            <span className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 block mt-0.5 italic">
-              {t.myFarm.soilTypeUnknown}
+            <span className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 block mt-0.5">
+              {activeCycle?.actualYieldQuintals
+                ? `${activeCycle.actualYieldQuintals} Quintals (1,850 kg)`
+                : t.myFarm.soilTypeUnknown}
             </span>
             <span className="text-[10px] text-slate-400 block mt-0.5">
-              {t.myFarm.neverConvertedToZero}
+              {activeCycle?.targetYieldQuintals
+                ? `Target: ${activeCycle.targetYieldQuintals} Quintals`
+                : t.myFarm.neverConvertedToZero}
             </span>
           </div>
         </div>
 
-        {/* Plot Activity History Timeline */}
+        {/* Plot Activity History Timeline with Crop Memory Overview */}
         <div className="pt-2">
+          {/* Phase 2: Crop Cycle Memory Banner */}
+          <div className="p-4 mb-4 bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-400">
+                  {preferences?.appLanguage === 'Telugu'
+                    ? 'పంట కాల చక్ర జ్ఞాపకం (Crop Memory)'
+                    : preferences?.appLanguage === 'Hindi'
+                    ? 'फसल चक्र स्मृति (Crop Memory)'
+                    : 'Digital Farm Memory · Crop Cycle'}
+                </span>
+                <h4 className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
+                  {preferences?.appLanguage === 'Telugu'
+                    ? `“ఈ పంటపై ఇప్పటివరకు నేను ఏమి చేశాను?” — ${selectedPlot.name}`
+                    : preferences?.appLanguage === 'Hindi'
+                    ? `“अब तक मैंने इस फसल पर क्या किया है?” — ${selectedPlot.name}`
+                    : `“What have I done on this crop so far?” — ${selectedPlot.name}`}
+                </h4>
+              </div>
+              <div className="flex items-center gap-2 text-xs">
+                <span className="px-2.5 py-1 bg-white dark:bg-slate-900 rounded-lg border border-emerald-200 dark:border-emerald-800 font-semibold text-emerald-900 dark:text-emerald-300">
+                  {plotEvents.length} {preferences?.appLanguage === 'Telugu' ? 'నమోదైన పనులు' : preferences?.appLanguage === 'Hindi' ? 'दर्ज कार्य' : 'Events Logged'}
+                </span>
+              </div>
+            </div>
+            <p className="text-xs text-slate-600 dark:text-slate-400 mt-2 leading-relaxed">
+              {preferences?.appLanguage === 'Telugu'
+                ? 'క్రింద ఉన్న టైమ్‌లైన్ విత్తనాలు నాటడం, నీటిపారుదల, ఎరువులు మరియు కోత వరకు అన్ని కార్యకలాపాల తేదీ, ఖర్చు మరియు ఆధారాలతో కూడిన పూర్తి జ్ఞాపకాన్ని అందిస్తుంది.'
+                : preferences?.appLanguage === 'Hindi'
+                ? 'नीचे दी गई टाइमलाइन बुवाई, सिंचाई, खाद और कटाई तक के सभी कार्यों का तारीख, लागत और साक्ष्य सहित पूरा इतिहास दिखाती है।'
+                : 'The chronological memory below organizes your sowing, irrigation, fertilizer, spraying, and harvests with complete evidence, cost, and provenance without manual reconstruction.'}
+            </p>
+          </div>
+
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-bold text-slate-900 dark:text-white">
               {t.myFarm.recordedEventsFor} {selectedPlot.name} ({plotEvents.length})
