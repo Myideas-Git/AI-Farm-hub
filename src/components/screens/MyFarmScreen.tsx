@@ -20,7 +20,8 @@ import {
 import { FarmerPreferences } from '../../types/profile';
 import { TrustIndicator } from '../common/TrustIndicator';
 import { FarmTimeline } from '../timeline/FarmTimeline';
-import { TRANSLATIONS } from '../../i18n/translations';
+import { getTranslations } from '../../i18n/translations';
+import { calculateFarmSummary, formatYieldDisplay } from '../../utils/farmSummary';
 
 interface MyFarmScreenProps {
   farmer: Farmer;
@@ -47,15 +48,28 @@ export const MyFarmScreen: React.FC<MyFarmScreenProps> = ({
   onDeleteEvent,
   onEditEvent,
 }) => {
-  const t = TRANSLATIONS[preferences?.appLanguage || 'Telugu'] || TRANSLATIONS.Telugu;
+  const t = getTranslations(preferences?.appLanguage || 'Telugu');
   const [selectedPlotId, setSelectedPlotId] = useState<string>(plots[0]?.id || 'plot-a');
 
   const selectedPlot = plots.find((p) => p.id === selectedPlotId) || plots[0];
-  const activeCycle = cropCycles.find(
-    (c) => c.plotId === selectedPlot?.id && c.status === 'active'
+  const getPlotActiveCycle = (plot?: Plot): CropCycle | undefined => {
+    if (!plot) return undefined;
+    return (
+      cropCycles.find((c) => c.id === plot.currentCropCycleId) ||
+      cropCycles.find((c) => c.plotId === plot.id && c.status === 'active') ||
+      cropCycles.find((c) => c.plotId === plot.id)
+    );
+  };
+  const activeCycle = getPlotActiveCycle(selectedPlot);
+  const priorCompletedCycles = cropCycles.filter(
+    (c) =>
+      c.plotId === selectedPlot?.id &&
+      c.id !== activeCycle?.id &&
+      c.status === 'completed'
   );
 
   const plotEvents = events.filter((e) => e.plotId === selectedPlot?.id);
+  const plotSummary = calculateFarmSummary(events, { plotId: selectedPlot?.id });
 
   return (
     <div className="space-y-6">
@@ -125,14 +139,16 @@ export const MyFarmScreen: React.FC<MyFarmScreenProps> = ({
                       {plot.name}
                     </span>
                     <span className="text-xs font-bold text-emerald-800 dark:text-emerald-400 tabular-nums">
-                      {plot.areaAcres} {preferences?.appLanguage === 'Telugu' ? 'ఎకరాలు' : preferences?.appLanguage === 'Hindi' ? 'एकड़' : 'Acres'}
+                      {plot.areaAcres} {t.units.acres}
                     </span>
                   </div>
                   <div className="text-xs text-slate-600 dark:text-slate-300 font-medium">
-                    {preferences?.appLanguage === 'Telugu' ? 'పంట:' : preferences?.appLanguage === 'Hindi' ? 'फसल:' : 'Crop:'} {plot.cropName}
+                    {t.myFarm.cropLabel}: {plot.cropName}
                   </div>
                   <div className="mt-2 pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400">
-                    <span>{t.myFarm.stageLandPrep}</span>
+                    <span>
+                      {t.myFarm.cropStage}: {t.cropStages[getPlotActiveCycle(plot)?.stage || 'unknown']}
+                    </span>
                     <TrustIndicator status="unknown" size="sm" language={preferences?.appLanguage || 'Telugu'} />
                   </div>
                 </button>
@@ -152,7 +168,7 @@ export const MyFarmScreen: React.FC<MyFarmScreenProps> = ({
               <span className="font-semibold text-slate-900 dark:text-white">{selectedPlot.name}</span>
               <span aria-hidden="true">→</span>
               <span>
-                {selectedPlot.areaAcres} {preferences?.appLanguage === 'Telugu' ? 'ఎకరాలు' : preferences?.appLanguage === 'Hindi' ? 'एकड़' : 'Acres'}
+                {selectedPlot.areaAcres} {t.units.acres}
               </span>
             </div>
             <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white">
@@ -207,17 +223,64 @@ export const MyFarmScreen: React.FC<MyFarmScreenProps> = ({
           <div className="p-3 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100 dark:border-slate-700">
             <span className="text-slate-500 dark:text-slate-400 text-[11px] block">{t.myFarm.yieldTargetActual}</span>
             <span className="text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-300 block mt-0.5">
-              {activeCycle?.actualYieldQuintals
-                ? `${activeCycle.actualYieldQuintals} Quintals (1,850 kg)`
-                : t.myFarm.soilTypeUnknown}
+              {formatYieldDisplay(activeCycle?.actualYieldQuintals, t)}
             </span>
             <span className="text-[10px] text-slate-400 block mt-0.5">
-              {activeCycle?.targetYieldQuintals
-                ? `Target: ${activeCycle.targetYieldQuintals} Quintals`
-                : t.myFarm.neverConvertedToZero}
+              {activeCycle?.targetYieldQuintals !== null && activeCycle?.targetYieldQuintals !== undefined
+                ? `${t.myFarm.targetPrefix}: ${activeCycle.targetYieldQuintals} ${t.myFarm.quintalsUnit}`
+                : t.myFarm.targetNotSet}
+            </span>
+            <span className="text-[10px] text-slate-400 block mt-0.5">
+              {activeCycle?.actualHarvestDate
+                ? `${t.myFarm.actualHarvestLabel}: ${activeCycle.actualHarvestDate}`
+                : activeCycle?.expectedHarvestDate
+                ? `${t.myFarm.expectedHarvestLabel}: ${activeCycle.expectedHarvestDate}`
+                : t.myFarm.harvestNotRecorded}
             </span>
           </div>
         </div>
+
+        {/* Separate Prior Completed Demo Cycle Context (avoids contradicting current preparation state) */}
+        {priorCompletedCycles.length > 0 && (
+          <div className="p-3.5 bg-sky-50/70 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800 rounded-xl text-xs space-y-1.5">
+            {priorCompletedCycles.map((priorCycle) => (
+              <div key={priorCycle.id} className="space-y-1">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-bold text-sky-950 dark:text-sky-200">
+                    {t.myFarm.priorDemoCycleTitle}: {priorCycle.cropName}
+                  </span>
+                  <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-sky-100 dark:bg-sky-900 text-sky-900 dark:text-sky-200 border border-sky-200 dark:border-sky-700 font-semibold">
+                    {t.myFarm.unvalidatedAgronomyBadge}
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
+                  {t.myFarm.priorDemoCycleNotice}
+                </p>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-slate-700 dark:text-slate-300 pt-1">
+                  <span>
+                    <strong>{t.myFarm.cropStage}:</strong> {t.cropStages[priorCycle.stage]} ({priorCycle.stageProgressPercent ?? 100}%)
+                  </span>
+                  {priorCycle.expectedHarvestDate && (
+                    <span>
+                      <strong>{t.myFarm.expectedHarvestLabel}:</strong> {priorCycle.expectedHarvestDate}
+                    </span>
+                  )}
+                  {priorCycle.actualHarvestDate && (
+                    <span>
+                      <strong>{t.myFarm.actualHarvestLabel}:</strong> {priorCycle.actualHarvestDate}
+                    </span>
+                  )}
+                  {priorCycle.actualYieldQuintals !== null && priorCycle.actualYieldQuintals !== undefined && (
+                    <span>
+                      <strong>{t.myFarm.yieldTargetActual}:</strong>{' '}
+                      {formatYieldDisplay(priorCycle.actualYieldQuintals, t)}
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* Plot Activity History Timeline with Crop Memory Overview */}
         <div className="pt-2">
@@ -242,7 +305,9 @@ export const MyFarmScreen: React.FC<MyFarmScreenProps> = ({
               </div>
               <div className="flex items-center gap-2 text-xs">
                 <span className="px-2.5 py-1 bg-white dark:bg-slate-900 rounded-lg border border-emerald-200 dark:border-emerald-800 font-semibold text-emerald-900 dark:text-emerald-300">
-                  {plotEvents.length} {preferences?.appLanguage === 'Telugu' ? 'నమోదైన పనులు' : preferences?.appLanguage === 'Hindi' ? 'दर्ज कार्य' : 'Events Logged'}
+                  {plotSummary.hasRealData
+                    ? `${plotSummary.realTotalEvents} ${preferences?.appLanguage === 'Telugu' ? 'నమోదైన పనులు' : preferences?.appLanguage === 'Hindi' ? 'दर्ज कार्य' : 'Events Logged'}`
+                    : `${plotSummary.demoTotalEvents} ${t.timeline.demoBadge}`}
                 </span>
               </div>
             </div>
@@ -257,7 +322,11 @@ export const MyFarmScreen: React.FC<MyFarmScreenProps> = ({
 
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-              {t.myFarm.recordedEventsFor} {selectedPlot.name} ({plotEvents.length})
+              {t.myFarm.recordedEventsFor} {selectedPlot.name} (
+              {plotSummary.hasRealData
+                ? plotSummary.realTotalEvents
+                : `${plotSummary.demoTotalEvents} ${t.timeline.demoBadge}`}
+              )
             </h3>
             <span className="text-xs text-slate-500 dark:text-slate-400">
               {t.myFarm.showingFieldLog}
@@ -265,8 +334,10 @@ export const MyFarmScreen: React.FC<MyFarmScreenProps> = ({
           </div>
 
           <FarmTimeline
+            key={selectedPlot.id}
             events={plotEvents}
             plots={[selectedPlot]}
+            defaultPlotId={selectedPlot.id}
             onRecordNewClick={onRecordActivityClick}
             onConfirmEvent={onConfirmEvent}
             onDeleteEvent={onDeleteEvent}

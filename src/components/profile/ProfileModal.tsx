@@ -221,7 +221,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
       const err =
         (!profileRes.success ? profileRes.error : '') ||
         (!prefsRes.success ? prefsRes.error : '') ||
-        'Storage persistence failed. Please verify storage permissions and retry.';
+        t.errors.profileSaveFailed;
       setErrorMessage(err);
       return; // Do NOT falsely claim success, do NOT close modal, keep user edits intact
     }
@@ -244,7 +244,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
       className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/60 backdrop-blur-xs animate-fade-in"
       role="dialog"
       aria-modal="true"
-      aria-label="Profile and Preferences"
+      aria-label={t.preferencesModal.title}
     >
       <div className="bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 rounded-2xl max-w-2xl w-full max-h-[92vh] flex flex-col shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden">
         {/* Header */}
@@ -272,7 +272,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({
             type="button"
             onClick={onClose}
             className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-            aria-label="Close dialog"
+            aria-label={t.actions.close}
           >
             <X className="w-5 h-5" />
           </button>

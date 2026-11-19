@@ -31,13 +31,28 @@ export const TrustIndicator: React.FC<TrustIndicatorProps> = ({
   const getStatusConfig = () => {
     switch (status) {
       case 'farmer_confirmed':
-      case 'confirmed':
         return {
           icon: CheckCircle2,
           label: t.trustIndicators.farmerConfirmed,
           textColor: 'text-emerald-700 dark:text-emerald-400',
           dotColor: 'bg-emerald-600',
           description: t.statuses.farmer_confirmed,
+        };
+      case 'confirmed':
+        return {
+          icon: CheckCircle2,
+          label: t.trustIndicators.independentlyVerified,
+          textColor: 'text-teal-800 dark:text-teal-300',
+          dotColor: 'bg-teal-600',
+          description: t.trustIndicators.independentlyVerified,
+        };
+      case 'unverified':
+        return {
+          icon: HelpCircle,
+          label: t.trustIndicators.unverified,
+          textColor: 'text-slate-600 dark:text-slate-400',
+          dotColor: 'bg-slate-400',
+          description: t.trustIndicators.unverified,
         };
       case 'pending_confirmation':
       case 'pending':

@@ -7,6 +7,7 @@
 
 import { FarmEvent, CorrectionHistoryItem } from '../types/farm';
 import { INITIAL_DEMO_EVENTS } from '../data/mockFarmData';
+import { isEstimatedEvent, normalizeEventProvenance } from '../utils/farmSummary';
 
 const STORAGE_KEY_FARMER_RECORDS = 'farm_intel_farmer_records_v1';
 const STORAGE_KEY_CORRUPT_BACKUP_PREFIX = 'farm_intel_corrupt_backup_';
@@ -16,7 +17,14 @@ export interface StorageResult<T> {
   data?: T;
   error?: string;
   isDuplicate?: boolean;
-  code?: 'QUOTA_EXCEEDED' | 'STORAGE_UNAVAILABLE' | 'NOT_FOUND' | 'CORRUPT_DATA' | 'DUPLICATE' | 'UNKNOWN';
+  code?:
+    | 'QUOTA_EXCEEDED'
+    | 'STORAGE_UNAVAILABLE'
+    | 'NOT_FOUND'
+    | 'CORRUPT_DATA'
+    | 'DUPLICATE'
+    | 'INVALID_STATE'
+    | 'UNKNOWN';
 }
 
 export interface LoadResult<T> {
@@ -102,7 +110,7 @@ export class ActivityStorageService {
 
       return {
         success: true,
-        data: parsed,
+        data: parsed.map((item: FarmEvent) => normalizeEventProvenance(item)),
       };
     } catch (err: any) {
       // JSON syntax error or storage read exception — do not silently overwrite
@@ -190,12 +198,17 @@ export class ActivityStorageService {
         };
       }
 
-      const updated = [record, ...existingRecords];
+      const normalizedRecord = normalizeEventProvenance({
+        ...record,
+        isDemo: false,
+      });
+
+      const updated = [normalizedRecord, ...existingRecords];
       localStorage.setItem(STORAGE_KEY_FARMER_RECORDS, JSON.stringify(updated));
 
       return {
         success: true,
-        data: record,
+        data: normalizedRecord,
       };
     } catch (err: any) {
       let code: StorageResult<FarmEvent>['code'] = 'UNKNOWN';
@@ -259,10 +272,13 @@ export class ActivityStorageService {
         'quantity',
         'unit',
         'areaCoveredAcres',
+        'cost',
+        'costType',
         'activityDate',
         'plotId',
         'plotName',
         'status',
+        'confirmationStatus',
         'fertilizerName',
         'description',
       ];
@@ -280,12 +296,19 @@ export class ActivityStorageService {
         }
       });
 
-      const updatedRecord: FarmEvent = {
+      // Strictly preserve original reporting provenance and synthetic boundary on edits
+      const mergedRecord: FarmEvent = {
         ...target,
         ...updates,
+        isDemo: target.isDemo,
+        source: target.source,
+        originalSource: target.originalSource ?? target.source,
+        activitySource: target.activitySource ?? updates.activitySource,
         correctionHistory: historyItems,
         updatedAt: now,
       };
+
+      const updatedRecord = normalizeEventProvenance(mergedRecord);
 
       existingRecords[index] = updatedRecord;
       localStorage.setItem(STORAGE_KEY_FARMER_RECORDS, JSON.stringify(existingRecords));
@@ -356,14 +379,42 @@ export class ActivityStorageService {
 
   /**
    * Confirms a record explicitly by the farmer.
-   * Strictly preserves the record's original capture source (e.g. ai_extracted, farmer_reported)
-   * and does NOT artificially elevate verificationStatus (independent verification).
+   * Strictly preserves the record's original capture source (e.g. ai_extracted, farmer_reported),
+   * activitySource, and does NOT artificially elevate verificationStatus (independent verification).
+   * Estimates and demo records cannot be farmer-confirmed as real facts.
    */
   public static confirmRecord(eventId: string, confirmedBy: string): StorageResult<FarmEvent> {
+    const loadResult = this.loadFarmerRecords();
+    if (!loadResult.success) {
+      return {
+        success: false,
+        error: loadResult.error || 'Failed to read records from storage.',
+      };
+    }
+
+    const target = loadResult.data.find((r) => r.eventId === eventId);
+    if (!target) {
+      return {
+        success: false,
+        code: 'NOT_FOUND',
+        error: 'Record not found in user storage. Demo records cannot be confirmed.',
+      };
+    }
+
+    if (isEstimatedEvent(target)) {
+      return {
+        success: false,
+        code: 'INVALID_STATE',
+        error: 'Estimated records cannot be farmer-confirmed as recorded field facts.',
+      };
+    }
+
     return this.updateRecord(
       eventId,
       {
         status: 'farmer_confirmed',
+        confirmationStatus: 'confirmed',
+        verificationStatus: target.verificationStatus,
         confirmedBy,
         confirmedAt: new Date().toISOString(),
       },

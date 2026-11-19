@@ -58,7 +58,7 @@ export const TopBar: React.FC<TopBarProps> = ({
         {/* Zone 2: 5 clean navigation links */}
         <nav
           className="hidden md:flex items-center gap-1 sm:gap-2"
-          aria-label="Main Navigation"
+          aria-label={t.nav.mainNavigation}
         >
           {navItems.map((item) => {
             const isActive = activeTab === item.id;
@@ -100,8 +100,8 @@ export const TopBar: React.FC<TopBarProps> = ({
             type="button"
             onClick={onOpenProfile}
             className="flex items-center gap-2 p-1 pl-2 rounded-full border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700/60 transition-colors focus:outline-hidden min-h-[36px]"
-            title={`${profile.preferredName || profile.fullName} — Settings`}
-            aria-label="Profile and Settings"
+            title={`${profile.preferredName || profile.fullName} — ${t.nav.settingsSuffix}`}
+            aria-label={t.nav.profileAndSettings}
           >
             <span className="text-xs font-medium text-slate-700 dark:text-slate-200 hidden lg:inline-block max-w-[120px] truncate">
               {profile.preferredName || profile.fullName}

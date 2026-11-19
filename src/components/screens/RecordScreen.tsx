@@ -39,9 +39,10 @@ import {
 import { FarmerPreferences } from '../../types/profile';
 import { FarmTimeline } from '../timeline/FarmTimeline';
 import { TrustIndicator } from '../common/TrustIndicator';
-import { TRANSLATIONS } from '../../i18n/translations';
+import { getTranslations } from '../../i18n/translations';
 import { VoiceExtractorService, ExtractedDraft, getLocalDateString } from '../../services/voiceExtractor';
 import { StorageResult } from '../../services/activityStorage';
+import { getLocalizedStorageError } from '../../utils/farmSummary';
 
 interface RecordScreenProps {
   plots: Plot[];
@@ -66,7 +67,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
   onDeleteEvent,
   onEditEvent,
 }) => {
-  const t = TRANSLATIONS[preferences.appLanguage] || TRANSLATIONS.Telugu;
+  const t = getTranslations(preferences.appLanguage);
 
   const initialModality =
     preferences.interactionMode === 'Quick' ? 'quick' : 'overview';
@@ -187,6 +188,15 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
       ? 'pending_ai_processing'
       : (explicitlyConfirmed ? 'farmer_confirmed' : 'pending_confirmation');
 
+    const extractedCost = extractedDraft.receiptInspection?.amount ?? null;
+    const hasReceipt = Boolean(extractedDraft.receiptInspection);
+    const activitySource = cameraCapturedImage ? 'camera_assisted' : 'voice_input';
+    const evidenceType = hasReceipt
+      ? 'receipt'
+      : cameraCapturedImage
+      ? 'photograph'
+      : 'farmer_statement';
+
     const newEvt: FarmEvent = {
       eventId: `REC-${Date.now().toString().slice(-5)}`,
       eventType: extractedDraft.eventType,
@@ -203,17 +213,21 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
       quantity: extractedDraft.quantity,
       unit: extractedDraft.unit,
       areaCoveredAcres: extractedDraft.areaCoveredAcres,
-      cost: extractedDraft.receiptInspection?.amount ?? null,
+      cost: extractedCost,
       currency: 'INR',
+      costType: extractedCost !== null ? 'actual' : 'unknown',
       source: extractedDraft.source || 'farmer_voice',
       originalSource: extractedDraft.source || 'farmer_voice',
+      activitySource,
+      evidenceType,
       status: finalStatus,
-      verificationStatus: 'pending', // Independent verification remains pending (farmer confirmation is not third-party verification)
+      confirmationStatus: explicitlyConfirmed && !isSimulatedOffline ? 'confirmed' : 'pending',
+      verificationStatus: 'unverified', // Farmer confirmation or voice/camera capture is never independent third-party verification
       isDemo: false,
       isDateAssigned: extractedDraft.isDateAssigned,
       rawTranscript: extractedDraft.rawTranscript,
       evidence: {
-        type: cameraCapturedImage ? 'photo' : 'audio_note',
+        type: hasReceipt ? 'receipt' : cameraCapturedImage ? 'photo' : 'audio_note',
         label: cameraCapturedImage ? 'Product/Receipt Photo Capture' : `Voice dictate (${preferences.voiceLanguage})`,
         notes: cameraCapturedImage ? `Combined with image: "${cameraSubject}"` : extractedDraft.rawTranscript,
         uri: cameraCapturedImage || undefined,
@@ -228,7 +242,9 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
 
     const saveRes = onAddEvent(newEvt);
     if (!saveRes.success) {
-      setErrorMessage(saveRes.error || 'Failed to save record to storage.');
+      setErrorMessage(
+        getLocalizedStorageError(saveRes.code, saveRes.error || t.errors.saveActivityFailed, t)
+      );
       return;
     }
 
@@ -284,7 +300,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
       } catch (err: any) {
         if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
           setCameraPermissionDenied(true);
-          setCameraAnalysisError('Camera access was denied. You can continue testing with sample photo captures below.');
+          setCameraAnalysisError(t.errors.cameraDenied);
         }
       }
     }
@@ -413,11 +429,12 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
     setErrorMessage(null);
 
     if (!formTitle.trim()) {
-      setErrorMessage('Please enter an activity title.');
+      setErrorMessage(t.errors.titleRequired);
       return;
     }
 
     const nowIso = new Date().toISOString();
+    const parsedFormCost = formCost ? parseFloat(formCost) : null;
     const newEvt: FarmEvent = {
       eventId: `REC-${Date.now().toString().slice(-5)}`,
       eventType: formEventType,
@@ -434,13 +451,17 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
       quantity: formQuantity ? parseFloat(formQuantity) : null,
       unit: formUnit || null,
       areaCoveredAcres: formArea ? parseFloat(formArea) : null,
-      cost: formCost ? parseFloat(formCost) : null,
+      cost: parsedFormCost !== null && Number.isFinite(parsedFormCost) ? parsedFormCost : null,
       currency: 'INR',
-      // Strict Provenance: manually entered is farmer-reported and pending confirmation
+      costType: parsedFormCost !== null && Number.isFinite(parsedFormCost) ? 'actual' : 'unknown',
+      // Strict Provenance: manually entered is farmer-reported and pending confirmation, never independently verified
       source: 'farmer_reported',
       originalSource: 'farmer_reported',
+      activitySource: 'manual_entry',
+      evidenceType: 'farmer_statement',
       status: 'pending_confirmation',
-      verificationStatus: 'pending',
+      confirmationStatus: 'pending',
+      verificationStatus: 'unverified',
       isDemo: false,
       evidence: { type: 'none' },
       createdBy: 'Ravi Kumar',
@@ -450,7 +471,9 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
 
     const saveRes = onAddEvent(newEvt);
     if (!saveRes.success) {
-      setErrorMessage(saveRes.error || 'Failed to save record to storage.');
+      setErrorMessage(
+        getLocalizedStorageError(saveRes.code, saveRes.error || t.errors.saveActivityFailed, t)
+      );
       return;
     }
 
@@ -501,11 +524,15 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
       areaCoveredAcres: area,
       cost: null,
       currency: 'INR',
-      // Strict Provenance: quick tap is farmer-reported and pending confirmation
+      costType: 'unknown',
+      // Strict Provenance: quick tap is farmer-reported and pending confirmation, never independently verified
       source: 'farmer_reported',
       originalSource: 'farmer_reported',
+      activitySource: 'manual_entry',
+      evidenceType: 'farmer_statement',
       status: 'pending_confirmation',
-      verificationStatus: 'pending',
+      confirmationStatus: 'pending',
+      verificationStatus: 'unverified',
       isDemo: false,
       evidence: { type: 'none' },
       createdBy: 'Ravi Kumar',
@@ -515,7 +542,9 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
 
     const saveRes = onAddEvent(newEvt);
     if (!saveRes.success) {
-      setErrorMessage(saveRes.error || 'Failed to save quick action.');
+      setErrorMessage(
+        getLocalizedStorageError(saveRes.code, saveRes.error || t.errors.saveQuickActionFailed, t)
+      );
       return;
     }
 
@@ -558,7 +587,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
               }`}
             >
-              Capture New
+              {t.record.captureNewTab}
             </button>
             <button
               type="button"
@@ -569,7 +598,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
               }`}
             >
-              Activity Timeline ({events.length})
+              {t.record.activityTimelineTab} ({events.length})
             </button>
           </div>
         </div>
@@ -585,7 +614,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
               className="text-[11px] text-emerald-700 dark:text-emerald-400 underline cursor-pointer"
               onClick={() => setActiveTab('timeline')}
             >
-              View in timeline
+              {t.record.viewInTimeline}
             </span>
           </div>
         )}
@@ -614,7 +643,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                   {t.record.voiceTabDesc}
                 </div>
                 <div className="mt-2 text-[10px] font-semibold text-emerald-800 dark:text-emerald-400 uppercase">
-                  Language: {preferences.voiceLanguage}
+                  {t.record.languagePrefix} {preferences.voiceLanguage}
                 </div>
               </button>
 
@@ -638,7 +667,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                   {t.record.cameraTabDesc}
                 </div>
                 <div className="mt-2 text-[10px] font-semibold text-slate-400 uppercase">
-                  Photo / Receipt
+                  {t.record.photoReceiptShort}
                 </div>
               </button>
 
@@ -662,7 +691,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                   {t.record.quickTabDesc}
                 </div>
                 <div className="mt-2 text-[10px] font-semibold text-emerald-800 dark:text-emerald-400 uppercase">
-                  1-Tap Ready
+                  {t.record.oneTapReadyShort}
                 </div>
               </button>
 
@@ -686,7 +715,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                   {t.record.formTabDesc}
                 </div>
                 <div className="mt-2 text-[10px] font-semibold text-emerald-800 dark:text-emerald-400 uppercase">
-                  Structured Entry
+                  {t.record.structuredEntryShort}
                 </div>
               </button>
             </div>
@@ -700,10 +729,10 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-base font-bold text-slate-900 dark:text-white">
-                Complete Farm Activity Records ({events.length})
+                {t.record.completeRecordsTitle} ({events.length})
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Farmer reported, AI extracted, and Demo records with full provenance tracking.
+                {t.record.completeRecordsDesc}
               </p>
             </div>
             <button
@@ -715,7 +744,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
               className="text-xs font-semibold text-emerald-800 dark:text-emerald-400 flex items-center gap-1 min-h-[36px]"
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>Record New Activity</span>
+              <span>{t.record.recordNewActivity}</span>
             </button>
           </div>
           <FarmTimeline
@@ -735,10 +764,10 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
               <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
                 <div>
                   <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                    Voice Activity Recording & AI Extraction
+                    {t.record.voiceRecordingTitle}
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Microphone is requested only on tap. Speech recognition runs in {preferences.voiceLanguage}.
+                    {t.record.voiceRecordingSubtitle} ({preferences.voiceLanguage})
                   </p>
                 </div>
                 <button
@@ -746,7 +775,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                   onClick={() => setSelectedModality('overview')}
                   className="text-xs text-slate-400 hover:text-slate-700"
                 >
-                  Close
+                  {t.record.closeModality}
                 </button>
               </div>
 
@@ -761,7 +790,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                       ? 'bg-rose-600 text-white animate-pulse'
                       : 'bg-emerald-800 text-white hover:bg-emerald-900'
                   }`}
-                  aria-label="Start Voice Recording"
+                  aria-label={t.record.tapToRecord}
                 >
                   <Mic className="w-8 h-8" />
                 </button>
@@ -775,7 +804,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                       : '“What happened on your farm today?”'}
                   </h4>
                   <div className="text-xs font-semibold text-emerald-800 dark:text-emerald-400 mt-1">
-                    {isRecording ? `Listening in ${preferences.voiceLanguage}...` : `Tap to Record Voice (${preferences.voiceLanguage})`}
+                    {isRecording ? t.record.listeningStatus : t.record.tapToRecordPrompt}
                   </div>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-md mx-auto">
                     {preferences.appLanguage === 'Telugu'
@@ -788,7 +817,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
 
                 {voiceEngineError && (
                   <div className="p-3 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 text-amber-900 dark:text-amber-200 rounded-lg text-xs text-left">
-                    <div className="font-semibold mb-0.5">Voice Notice:</div>
+                    <div className="font-semibold mb-0.5">{t.record.voiceNotice}</div>
                     <div>{voiceEngineError}</div>
                   </div>
                 )}
@@ -796,7 +825,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                 {voiceTranscript && (
                   <div className="p-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-left text-xs">
                     <span className="text-[11px] text-slate-400 uppercase font-semibold block mb-1">
-                      Transcribed Speech:
+                      {t.record.transcribedSpeech}
                     </span>
                     <div className="font-semibold text-slate-900 dark:text-white">
                       "{voiceTranscript}"
@@ -972,20 +1001,20 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                   {/* Summary Breakdown: Activity, Input, Area, Date */}
                   <div className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-emerald-200 dark:border-emerald-800 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                     <div>
-                      <span className="text-slate-400 block text-[11px]">Activity:</span>
-                      <span className="font-bold text-slate-800 dark:text-slate-100 capitalize">{extractedDraft.eventType.replace('_', ' ')}</span>
+                      <span className="text-slate-400 block text-[11px]">{t.record.activityLabel}</span>
+                      <span className="font-bold text-slate-800 dark:text-slate-100">{t.eventTypes[extractedDraft.eventType] || extractedDraft.eventType.replace('_', ' ')}</span>
                     </div>
                     <div>
-                      <span className="text-slate-400 block text-[11px]">Input / Product:</span>
-                      <span className="font-bold text-emerald-800 dark:text-emerald-400">{extractedDraft.fertilizerName || extractedDraft.productName || 'None / Unspecified'}</span>
+                      <span className="text-slate-400 block text-[11px]">{t.record.inputProductLabel}</span>
+                      <span className="font-bold text-emerald-800 dark:text-emerald-400">{extractedDraft.fertilizerName || extractedDraft.productName || t.timeline.noneRecorded}</span>
                     </div>
                     <div>
-                      <span className="text-slate-400 block text-[11px]">Area:</span>
-                      <span className="font-bold text-slate-800 dark:text-slate-100">{extractedDraft.areaCoveredAcres ? `${extractedDraft.areaCoveredAcres} acres` : 'Not specified'}</span>
+                      <span className="text-slate-400 block text-[11px]">{t.record.areaLabel}</span>
+                      <span className="font-bold text-slate-800 dark:text-slate-100">{extractedDraft.areaCoveredAcres ? `${extractedDraft.areaCoveredAcres} ${t.units.acres}` : t.record.unknownValue}</span>
                     </div>
                     <div>
-                      <span className="text-slate-400 block text-[11px]">Date:</span>
-                      <span className="font-bold text-slate-800 dark:text-slate-100">{extractedDraft.activityDate || 'Today'}</span>
+                      <span className="text-slate-400 block text-[11px]">{t.record.dateLabel}</span>
+                      <span className="font-bold text-slate-800 dark:text-slate-100">{extractedDraft.activityDate || t.home.unknownDate}</span>
                     </div>
                   </div>
 
@@ -994,7 +1023,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                     <div className="p-3 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 rounded-xl text-xs space-y-1.5">
                       <div className="font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
                         <HelpCircle className="w-3.5 h-3.5" />
-                        <span>Clarification Needed:</span>
+                        <span>{t.record.clarificationNeeded}</span>
                       </div>
                       {extractedDraft.needsClarification.map((c, i) => (
                         <div key={i} className="text-amber-800 dark:text-amber-300">
@@ -1064,7 +1093,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                         <option value="">{t.record.unspecifiedPlot}</option>
                         {plots.map((p) => (
                           <option key={p.id} value={p.id}>
-                            {p.name} ({p.areaAcres} Acres)
+                            {p.name} ({p.areaAcres} {t.units.acres})
                           </option>
                         ))}
                       </select>
@@ -1084,7 +1113,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                               quantity: e.target.value ? parseFloat(e.target.value) : null,
                             })
                           }
-                          placeholder="Unknown"
+                          placeholder={t.record.unknownValue}
                           className="w-2/3 px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white"
                         />
                         <input
@@ -1093,7 +1122,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                           onChange={(e) =>
                             setExtractedDraft({ ...extractedDraft, unit: e.target.value })
                           }
-                          placeholder="kg"
+                          placeholder={t.myFarm.kgUnit}
                           className="w-1/3 px-2.5 py-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-white"
                         />
                       </div>
@@ -1141,7 +1170,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                         type="button"
                         onClick={() => handleSaveExtractedDraft(false)}
                         className="px-3.5 py-2 text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-200"
-                        title="Save as pending confirmation"
+                        title={t.record.savePendingTooltip}
                       >
                         {t.record.savePending}
                       </button>
@@ -1152,7 +1181,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                         className="px-5 py-2 text-xs font-bold bg-emerald-800 text-white rounded-lg hover:bg-emerald-900 shadow-xs flex items-center gap-1.5"
                       >
                         <Check className="w-4 h-4" />
-                        <span>{preferences.appLanguage === 'Telugu' ? 'నిర్ధారించు (Confirm)' : preferences.appLanguage === 'Hindi' ? 'पुष्टि करें (Confirm)' : 'Confirm'}</span>
+                        <span>{t.actions.confirm}</span>
                       </button>
                     </div>
                   </div>
@@ -1168,10 +1197,10 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                 <div>
                   <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                     <Camera className="w-5 h-5 text-sky-600" />
-                    <span>Camera & Receipt Intelligence</span>
+                    <span>{t.record.cameraHeaderTitle}</span>
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
-                    Capture fertilizer packaging, agro-dealer receipts, or crop health observations.
+                    {t.record.cameraHeaderSubtitle}
                   </p>
                 </div>
                 <button
@@ -1179,7 +1208,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                   onClick={() => setSelectedModality('overview')}
                   className="text-xs text-slate-400 hover:text-slate-700"
                 >
-                  Close
+                  {t.record.closeModality}
                 </button>
               </div>
 
@@ -1188,15 +1217,15 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                 <div>
                   <div className="font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
                     <Radio className={`w-3.5 h-3.5 ${isSimulatedOffline ? 'text-amber-500' : 'text-emerald-500'}`} />
-                    <span>Network & Processing Mode:</span>
+                    <span>{t.record.cameraNetworkLabel}</span>
                     <span className={isSimulatedOffline ? 'text-amber-700 dark:text-amber-300 font-bold' : 'text-emerald-700 dark:text-emerald-400 font-bold'}>
-                      {isSimulatedOffline ? 'Offline / Low-Connectivity Mode' : 'Online / Connected'}
+                      {isSimulatedOffline ? t.record.cameraOfflineLabel : t.record.cameraOnlineLabel}
                     </span>
                   </div>
                   <p className="text-slate-500 text-[11px] mt-0.5">
                     {isSimulatedOffline
-                      ? 'AI models cannot be reached right now. Saves record locally tagged as “Pending AI processing”.'
-                      : 'Real-time AI extraction enabled. Records extracted and confirmed immediately.'}
+                      ? t.sync.offlineBannerDesc
+                      : t.record.cameraHeaderSubtitle}
                   </p>
                 </div>
                 <button
@@ -1208,7 +1237,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                       : 'bg-white border-slate-300 text-slate-700 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200'
                   }`}
                 >
-                  {isSimulatedOffline ? 'Switch to Online' : 'Simulate Offline Capture'}
+                  {isSimulatedOffline ? t.record.cameraSwitchOnline : t.record.cameraSimulateOffline}
                 </button>
               </div>
 
@@ -1216,7 +1245,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
               <div className="p-4 bg-sky-50/60 dark:bg-sky-950/40 rounded-xl border border-sky-200 dark:border-sky-800 space-y-2 text-xs">
                 <div className="font-bold text-sky-950 dark:text-sky-200 flex items-center gap-1.5">
                   <Mic className="w-3.5 h-3.5 text-sky-700" />
-                  <span>Combined Voice + Camera Workflow</span>
+                  <span>{t.record.cameraVoiceCombined}</span>
                 </div>
                 <p className="text-sky-800 dark:text-sky-300 text-[11px]">
                   Farmer speaks (e.g. “I used this today on Plot A”) and then photographs the input or receipt. The system merges speech context and image intelligence into one candidate FarmEvent.
@@ -1253,8 +1282,8 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                   <div className="w-8 h-8 rounded-lg bg-sky-100 dark:bg-sky-900 text-sky-700 flex items-center justify-center mb-2">
                     <Sparkles className="w-4 h-4" />
                   </div>
-                  <div className="font-bold text-slate-900 dark:text-white text-xs">Fertilizer Package</div>
-                  <div className="text-[11px] text-slate-500 mt-0.5">Extract brand, active ingredient, batch, and expiry.</div>
+                  <div className="font-bold text-slate-900 dark:text-white text-xs">{t.record.cameraSampleFertilizer}</div>
+                  <div className="text-[11px] text-slate-500 mt-0.5">{t.record.cameraHeaderSubtitle}</div>
                 </button>
 
                 <button
@@ -1269,8 +1298,8 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                   <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-900 text-emerald-700 flex items-center justify-center mb-2">
                     <Receipt className="w-4 h-4" />
                   </div>
-                  <div className="font-bold text-slate-900 dark:text-white text-xs">Receipt / Invoice</div>
-                  <div className="text-[11px] text-slate-500 mt-0.5">Extract seller, date, product, quantity, and cost.</div>
+                  <div className="font-bold text-slate-900 dark:text-white text-xs">{t.record.cameraSampleReceipt}</div>
+                  <div className="text-[11px] text-slate-500 mt-0.5">{t.record.cameraTabDesc}</div>
                 </button>
 
                 <button
@@ -1285,8 +1314,8 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                   <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900 text-amber-700 flex items-center justify-center mb-2">
                     <Sprout className="w-4 h-4" />
                   </div>
-                  <div className="font-bold text-slate-900 dark:text-white text-xs">Crop Field Photo</div>
-                  <div className="text-[11px] text-slate-500 mt-0.5">Field observation & scouting documentation.</div>
+                  <div className="font-bold text-slate-900 dark:text-white text-xs">{t.record.cameraSampleFieldPhoto}</div>
+                  <div className="text-[11px] text-slate-500 mt-0.5">{t.record.photoReceiptNotice}</div>
                 </button>
               </div>
 
@@ -1316,7 +1345,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                   <div className="p-3 bg-rose-950/80 border border-rose-800 rounded-lg text-rose-200 text-xs text-left max-w-md mx-auto flex items-start gap-2">
                     <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5 text-rose-400" />
                     <div>
-                      <div className="font-bold">Image Quality Notice:</div>
+                      <div className="font-bold">{t.record.cameraQualityNotice}</div>
                       <div>{cameraAnalysisError}</div>
                     </div>
                   </div>
@@ -1325,14 +1354,14 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                 {isAnalyzingImage && (
                   <div className="p-3 bg-sky-950/80 border border-sky-800 rounded-lg text-sky-200 text-xs max-w-md mx-auto flex items-center justify-center gap-2">
                     <Sparkles className="w-4 h-4 animate-spin text-sky-400" />
-                    <span>Analyzing image with AI extraction model...</span>
+                    <span>{t.record.cameraAnalyzing}</span>
                   </div>
                 )}
 
                 {/* Sample Conceptual Capture Actions (Section 5, 6, 7, 13) */}
                 <div className="pt-3 border-t border-slate-800 text-left max-w-lg mx-auto">
                   <div className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
-                    Simulate Camera Scenarios (Test QA Flow)
+                    {t.record.cameraQuickSamplesTitle}
                   </div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
                     <button
@@ -1340,7 +1369,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                       onClick={() => handleProcessImageCapture('fertilizer_clear')}
                       className="p-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-left"
                     >
-                      <div className="font-bold text-sky-400">1. Clear Fertilizer Bag</div>
+                      <div className="font-bold text-sky-400">1. {t.record.cameraSampleFertilizer}</div>
                       <div className="text-[11px] text-slate-300">Gromor Urea 45kg, Coromandel, Batch #8492</div>
                     </button>
 
@@ -1349,8 +1378,8 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                       onClick={() => handleProcessImageCapture('fertilizer_blurry')}
                       className="p-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-left"
                     >
-                      <div className="font-bold text-amber-400">2. Blurry / Unreadable Bag</div>
-                      <div className="text-[11px] text-slate-300">"Couldn't read clearly" error (no guessing)</div>
+                      <div className="font-bold text-amber-400">2. {t.record.cameraQualityNotice}</div>
+                      <div className="text-[11px] text-slate-300">Blurry / Unreadable sample</div>
                     </button>
 
                     <button
@@ -1358,7 +1387,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                       onClick={() => handleProcessImageCapture('receipt_clear')}
                       className="p-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-left"
                     >
-                      <div className="font-bold text-emerald-400">3. Clear Purchase Receipt</div>
+                      <div className="font-bold text-emerald-400">3. {t.record.cameraSampleReceipt}</div>
                       <div className="text-[11px] text-slate-300">Sri Lakshmi Agro, 45kg Urea, ₹266.50</div>
                     </button>
 
@@ -1367,8 +1396,8 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                       onClick={() => handleProcessImageCapture('crop_image')}
                       className="p-2.5 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-lg text-left"
                     >
-                      <div className="font-bold text-indigo-400">4. Crop Leaf Photo</div>
-                      <div className="text-[11px] text-slate-300">Field scouting observation with photo attached</div>
+                      <div className="font-bold text-indigo-400">4. {t.record.cameraSampleFieldPhoto}</div>
+                      <div className="text-[11px] text-slate-300">{t.eventTypes.pest_scouting}</div>
                     </button>
                   </div>
                 </div>
@@ -1378,10 +1407,10 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
               <div className="p-3 bg-amber-50 dark:bg-amber-950/60 border border-amber-200 dark:border-amber-800 rounded-xl text-xs space-y-1">
                 <div className="font-bold text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
                   <ShieldCheck className="w-4 h-4 text-amber-700" />
-                  <span>AI Agricultural Safety Policy</span>
+                  <span>{t.record.cameraSafetyPolicyTitle}</span>
                 </div>
                 <p className="text-amber-800 dark:text-amber-300 text-[11px] leading-relaxed">
-                  AI Farm Hub assists with recording what happened. It does not invent chemical dosages, unverified mixing instructions, disease diagnoses, or fabricate soil values. All AI extractions remain awaiting farmer confirmation.
+                  {t.record.cameraSafetyPolicyDesc}
                 </p>
               </div>
             </div>
@@ -1423,11 +1452,11 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                   <div className="flex items-center justify-between mb-1.5">
                     <Sprout className="w-5 h-5 text-emerald-600" />
                     <span className="text-[10px] font-semibold text-slate-400 group-hover:text-emerald-800">
-                      + Log
+                      {t.record.quickLog}
                     </span>
                   </div>
-                  <div className="text-xs font-bold text-slate-900 dark:text-white">Land Prep (Paddy)</div>
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Plot A (2 Acres)</div>
+                  <div className="text-xs font-bold text-slate-900 dark:text-white">{t.record.quickLandPrepPaddy}</div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Plot A (2 {t.units.acres})</div>
                 </button>
 
                 {/* 2. Plot B - Groundnut Land Prep */}
@@ -1436,7 +1465,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                   onClick={() =>
                     handleQuickAction(
                       'land_prep',
-                      'Land preparation on Plot B',
+                      t.record.quickLandPrepGroundnut,
                       'plot-b',
                       null,
                       null,
@@ -1448,11 +1477,11 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                   <div className="flex items-center justify-between mb-1.5">
                     <Sprout className="w-5 h-5 text-amber-600" />
                     <span className="text-[10px] font-semibold text-slate-400 group-hover:text-emerald-800">
-                      + Log
+                      {t.record.quickLog}
                     </span>
                   </div>
-                  <div className="text-xs font-bold text-slate-900 dark:text-white">Land Prep (Groundnut)</div>
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Plot B (3 Acres)</div>
+                  <div className="text-xs font-bold text-slate-900 dark:text-white">{t.record.quickLandPrepGroundnut}</div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Plot B (3 {t.units.acres})</div>
                 </button>
 
                 {/* 3. Irrigation on Plot A */}
@@ -1461,10 +1490,10 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                   onClick={() =>
                     handleQuickAction(
                       'irrigation',
-                      'Irrigation on Plot A (Paddy)',
+                      t.record.quickIrrigationPaddy,
                       'plot-a',
                       null,
-                      'runtime hours',
+                      'hours',
                       2.0
                     )
                   }
@@ -1473,11 +1502,11 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                   <div className="flex items-center justify-between mb-1.5">
                     <Droplets className="w-5 h-5 text-sky-600" />
                     <span className="text-[10px] font-semibold text-slate-400 group-hover:text-emerald-800">
-                      + Log
+                      {t.record.quickLog}
                     </span>
                   </div>
-                  <div className="text-xs font-bold text-slate-900 dark:text-white">Irrigation (Paddy)</div>
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Plot A (2 Acres)</div>
+                  <div className="text-xs font-bold text-slate-900 dark:text-white">{t.record.quickIrrigationPaddy}</div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">Plot A (2 {t.units.acres})</div>
                 </button>
 
                 {/* 4. Routine Field Scouting */}
@@ -1486,7 +1515,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                   onClick={() =>
                     handleQuickAction(
                       'observation',
-                      'Morning Field Walk Inspection',
+                      t.record.quickFieldInspection,
                       'plot-b',
                       null,
                       null,
@@ -1498,11 +1527,11 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                   <div className="flex items-center justify-between mb-1.5">
                     <Eye className="w-5 h-5 text-indigo-600" />
                     <span className="text-[10px] font-semibold text-slate-400 group-hover:text-emerald-800">
-                      + Log
+                      {t.record.quickLog}
                     </span>
                   </div>
-                  <div className="text-xs font-bold text-slate-900 dark:text-white">Field Inspection</div>
-                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">No pest/disease found</div>
+                  <div className="text-xs font-bold text-slate-900 dark:text-white">{t.record.quickFieldInspection}</div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{t.record.quickFieldInspectionDesc}</div>
                 </button>
               </div>
             </div>
@@ -1515,10 +1544,10 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                      Structured Field Entry Form
+                      {t.record.structuredFormTitle}
                     </h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                      When precision matters: recorded into persistent local farm memory.
+                      {t.record.structuredFormSubtitle}
                     </p>
                   </div>
                   <TrustIndicator
@@ -1541,7 +1570,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                   {/* Target Plot */}
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      Target Plot *
+                      {t.record.targetPlotLabel}
                     </label>
                     <select
                       value={formPlotId}
@@ -1555,7 +1584,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                     >
                       {plots.map((p) => (
                         <option key={p.id} value={p.id}>
-                          {p.name} ({p.areaAcres} Acres — {p.cropName})
+                          {p.name} ({p.areaAcres} {t.units.acres} — {p.cropName})
                         </option>
                       ))}
                     </select>
@@ -1564,7 +1593,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                   {/* Activity Type */}
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      Activity Type *
+                      {t.record.activityTypeLabel}
                     </label>
                     <select
                       value={formEventType}
@@ -1572,14 +1601,16 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                       className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 min-h-[40px]"
                       required
                     >
-                      <option value="land_prep">Land Preparation</option>
-                      <option value="sowing">Seed Sowing</option>
-                      <option value="irrigation">Irrigation</option>
-                      <option value="fertilizer">Fertilizer Application</option>
-                      <option value="spray">Crop Spray / Treatment</option>
-                      <option value="weeding">Weeding</option>
-                      <option value="pest_scouting">Pest Scouting</option>
-                      <option value="observation">General Observation</option>
+                      <option value="land_prep">{t.eventTypes.land_prep}</option>
+                      <option value="sowing">{t.eventTypes.sowing}</option>
+                      <option value="irrigation">{t.eventTypes.irrigation}</option>
+                      <option value="fertilizer">{t.eventTypes.fertilizer}</option>
+                      <option value="spray">{t.eventTypes.spray}</option>
+                      <option value="weeding">{t.eventTypes.weeding}</option>
+                      <option value="pest_scouting">{t.eventTypes.pest_scouting}</option>
+                      <option value="observation">{t.eventTypes.observation}</option>
+                      <option value="harvest">{t.eventTypes.harvest}</option>
+                      <option value="sale">{t.eventTypes.sale}</option>
                     </select>
                   </div>
                 </div>
@@ -1587,7 +1618,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      Activity Date
+                      {t.record.activityDateLabel}
                     </label>
                     <input
                       type="date"
@@ -1599,7 +1630,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
 
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      Area Covered (Acres)
+                      {t.record.areaCoveredLabel}
                     </label>
                     <input
                       type="number"
@@ -1614,11 +1645,11 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                 {/* Title */}
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                    Activity Title / Description *
+                    {t.record.titleDescLabel}
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. Deep summer ploughing or Trichoderma treatment"
+                    placeholder={t.record.titleDescPlaceholder}
                     value={formTitle}
                     onChange={(e) => setFormTitle(e.target.value)}
                     className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 min-h-[40px]"
@@ -1630,11 +1661,11 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      Input / Product Used (Optional)
+                      {t.record.inputProductOptionalLabel}
                     </label>
                     <input
                       type="text"
-                      placeholder="e.g. Urea, Product X, Drip irrigation, BPT-5204"
+                      placeholder={t.record.inputProductPlaceholder}
                       value={formInputName}
                       onChange={(e) => setFormInputName(e.target.value)}
                       className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 min-h-[40px]"
@@ -1642,12 +1673,12 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      Cost Incurred (₹ INR, Optional)
+                      {t.record.costOptionalLabel}
                     </label>
                     <input
                       type="number"
                       step="any"
-                      placeholder="e.g. 280 or 1500"
+                      placeholder={t.record.costPlaceholder}
                       value={formCost}
                       onChange={(e) => setFormCost(e.target.value)}
                       className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 min-h-[40px]"
@@ -1659,12 +1690,12 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      Quantity (Optional)
+                      {t.record.quantityOptionalLabel}
                     </label>
                     <input
                       type="number"
                       step="any"
-                      placeholder="e.g. 40"
+                      placeholder={t.record.quantityPlaceholder}
                       value={formQuantity}
                       onChange={(e) => setFormQuantity(e.target.value)}
                       className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 min-h-[40px]"
@@ -1672,11 +1703,11 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                   </div>
                   <div>
                     <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                      Measurement Unit
+                      {t.record.measurementUnitLabel}
                     </label>
                     <input
                       type="text"
-                      placeholder="kg, bags, hours, ml..."
+                      placeholder={t.timeline.unitPlaceholder}
                       value={formUnit}
                       onChange={(e) => setFormUnit(e.target.value)}
                       className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 min-h-[40px]"
@@ -1686,7 +1717,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
 
                 <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
                   <span className="text-[11px] text-slate-500">
-                    Source: Farmer reported · Saved durably to local storage.
+                    {t.record.formSourceFooter}
                   </span>
 
                   <button
@@ -1694,7 +1725,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                     className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-800 text-white rounded-lg text-xs font-bold hover:bg-emerald-900 transition-colors shadow-xs min-h-[44px]"
                   >
                     <Send className="w-3.5 h-3.5" />
-                    <span>Save to Activity Records</span>
+                    <span>{t.record.saveToRecords}</span>
                   </button>
                 </div>
               </form>
@@ -1713,13 +1744,13 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
           <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-5 sm:p-6 shadow-xl border border-slate-200 dark:border-slate-800 text-xs space-y-3">
             <div className="flex items-center gap-2 text-amber-800 dark:text-amber-300 font-bold text-sm">
               <AlertTriangle className="w-4 h-4" />
-              <span>Potential Duplicate Detected</span>
+              <span>{t.record.duplicateModalTitle}</span>
             </div>
             <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-              You said: "అదే పని మళ్లీ సేవ్ చేయి" (Save the same task again). A matching activity was already saved recently.
+              {t.record.duplicateModalDesc}
             </p>
             <p className="text-slate-600 dark:text-slate-400">
-              Would you like to create another separate record, or keep the existing record as is?
+              {t.record.duplicateModalQuestion}
             </p>
             <div className="flex justify-end gap-2 pt-2">
               <button
@@ -1730,7 +1761,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                 }}
                 className="px-3.5 py-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
               >
-                Keep Existing Only
+                {t.record.keepExistingOnly}
               </button>
               <button
                 type="button"
@@ -1740,7 +1771,7 @@ export const RecordScreen: React.FC<RecordScreenProps> = ({
                 }}
                 className="px-4 py-2 rounded-lg bg-emerald-800 text-white font-bold"
               >
-                Create Another Record
+                {t.record.createAnotherRecord}
               </button>
             </div>
           </div>

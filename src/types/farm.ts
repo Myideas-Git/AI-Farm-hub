@@ -38,6 +38,46 @@ export type RecordStatus =
   | 'estimated'
   | 'unknown';
 
+/**
+ * P0 Separated Provenance Types:
+ * Keep activity origin, supporting evidence, farmer confirmation,
+ * independent verification, and cost classification strictly distinct.
+ */
+export type ActivitySource =
+  | 'manual_entry'
+  | 'voice_input'
+  | 'camera_assisted'
+  | 'sensor_integration'
+  | 'model_estimate'
+  | 'unknown';
+
+export type EvidenceType =
+  | 'farmer_statement'
+  | 'photograph'
+  | 'receipt'
+  | 'gps_observation'
+  | 'weather_data'
+  | 'soil_test'
+  | 'none';
+
+export type ConfirmationStatus =
+  | 'pending'
+  | 'confirmed'
+  | 'rejected'
+  | 'not_applicable';
+
+export type CostType = 'actual' | 'estimated' | 'unknown';
+
+export type AgronomicValidationStatus =
+  | 'unvalidated_demo'
+  | 'unverified'
+  | 'source_validated';
+
+export type ConfidenceSource =
+  | 'web_speech_api_asr'
+  | 'sensor_calibration'
+  | 'synthetic_demo_only';
+
 export type SyncState = 'online' | 'offline' | 'pending_sync' | 'sync_completed';
 
 export type SemanticHealth = 'healthy' | 'attention' | 'urgent' | 'info' | 'unknown';
@@ -139,6 +179,8 @@ export interface CropCycle {
   targetYieldQuintals: number | null;
   actualYieldQuintals?: number | null;
   status: 'active' | 'completed' | 'abandoned' | 'unknown';
+  isDemo?: boolean;
+  agronomicValidationStatus?: AgronomicValidationStatus;
   notes?: string;
 }
 
@@ -243,7 +285,8 @@ export interface FarmEvent {
   isDateAssigned?: boolean; // Flagged true when date was auto-assigned today for review
   rawTranscript?: string; // Captured voice transcript note
   evidence: FarmEventEvidence;
-  confidence?: number; // 0 - 1 (only when supported by real speech recognition or sensor metrics)
+  confidence?: number; // 0 - 1; ONLY populated when genuinely measured from a documented confidenceSource
+  confidenceSource?: ConfidenceSource; // Explicit source & meaning of confidence value (never invented for manual/GPS records)
   isEstimate?: boolean; // When true, clearly displayed as an AI estimate to avoid presenting estimates as facts
   estimateRationale?: string;
   createdBy: string;
@@ -251,6 +294,11 @@ export interface FarmEvent {
   confirmedAt?: string;
   correctionHistory?: CorrectionHistoryItem[];
   conflicts?: ConflictItem[];
+  costType?: CostType; // Actual incurred cost vs estimated/projected cost vs unknown
+  activitySource?: ActivitySource; // How the activity was reported or captured
+  evidenceType?: EvidenceType; // Supporting evidence actually available
+  confirmationStatus?: ConfirmationStatus; // Whether the farmer reviewed & confirmed this record
+  verificationMechanism?: string; // Documented independent verification mechanism (required for verificationStatus === 'confirmed')
   fertilizerName?: string;
   productName?: string;
   isTentative?: boolean;

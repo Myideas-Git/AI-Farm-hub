@@ -5,6 +5,7 @@ import { AppLanguage } from '../../types/profile';
 import { getTranslations } from '../../i18n/translations';
 import { getLocalDateString } from '../../services/voiceExtractor';
 import { StorageResult } from '../../services/activityStorage';
+import { getLocalizedStorageError } from '../../utils/farmSummary';
 
 interface QuickRecordModalProps {
   isOpen: boolean;
@@ -54,6 +55,8 @@ export const QuickRecordModal: React.FC<QuickRecordModalProps> = ({
     setIsSubmitting(true);
 
     const nowIso = new Date().toISOString();
+    const parsedQuantity = quantity ? parseFloat(quantity) : null;
+    const parsedCost = cost ? parseFloat(cost) : null;
     const newEvt: FarmEvent = {
       eventId: `EVT-${Date.now().toString().slice(-5)}`,
       eventType,
@@ -61,21 +64,25 @@ export const QuickRecordModal: React.FC<QuickRecordModalProps> = ({
       farmId,
       plotId: selectedPlot.id,
       plotName: selectedPlot.name,
-      cropCycleId: activeCycle?.id || (selectedPlot.id === 'plot-a' ? 'cycle-paddy-01' : 'cycle-gnut-01'),
+      cropCycleId: activeCycle?.id || (selectedPlot.id === 'plot-a' ? 'cycle-paddy-current' : 'cycle-groundnut-01'),
       cropName: activeCycle?.cropName || (selectedPlot.id === 'plot-a' ? 'Paddy' : 'Groundnut'),
       activityDate: date,
       recordedDate: nowIso,
-      title: title.trim() || `${eventType.toUpperCase()} on ${selectedPlot.name}`,
-      quantity: quantity ? parseFloat(quantity) : null,
+      title: title.trim() || `${t.eventTypes[eventType]} — ${selectedPlot.name}`,
+      quantity: parsedQuantity !== null && Number.isFinite(parsedQuantity) ? parsedQuantity : null,
       unit: unit || undefined,
       areaCoveredAcres: selectedPlot.areaAcres,
-      cost: cost ? parseFloat(cost) : null,
+      cost: parsedCost !== null && Number.isFinite(parsedCost) ? parsedCost : null,
       currency: 'INR',
-      // Strict Provenance: manual submission is farmer-reported and pending confirmation, never auto-confirmed or verified
+      costType: parsedCost !== null && Number.isFinite(parsedCost) ? 'actual' : 'unknown',
+      // Strict Provenance: manual submission is farmer-reported and pending confirmation, never auto-confirmed or independently verified
       source: 'farmer_reported',
       originalSource: 'farmer_reported',
+      activitySource: 'manual_entry',
+      evidenceType: 'farmer_statement',
       status: 'pending_confirmation',
-      verificationStatus: 'pending',
+      confirmationStatus: 'pending',
+      verificationStatus: 'unverified',
       isDemo: false,
       evidence: { type: 'none' },
       createdBy: farmerName,
@@ -91,7 +98,9 @@ export const QuickRecordModal: React.FC<QuickRecordModalProps> = ({
     } else {
       setIsSubmitting(false);
       // Keep modal open and preserve form data for retry
-      setErrorMessage(saveResult.error || 'Failed to save activity record. Please retry.');
+      setErrorMessage(
+        getLocalizedStorageError(saveResult.code, saveResult.error || t.errors.saveActivityFailed, t)
+      );
     }
   };
 
@@ -128,7 +137,7 @@ export const QuickRecordModal: React.FC<QuickRecordModalProps> = ({
             <div>
               <p className="font-semibold">{errorMessage}</p>
               <p className="text-[11px] text-rose-600 dark:text-rose-400 mt-0.5">
-                Your entered details are preserved below. You can try saving again.
+                {t.quickRecordModal.dataPreservedNotice}
               </p>
             </div>
           </div>
@@ -146,7 +155,7 @@ export const QuickRecordModal: React.FC<QuickRecordModalProps> = ({
             >
               {plots.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.name} ({p.areaAcres} Acres - {p.cropName})
+                  {p.name} ({p.areaAcres} {t.units.acres} - {p.cropName})
                 </option>
               ))}
             </select>
@@ -162,14 +171,15 @@ export const QuickRecordModal: React.FC<QuickRecordModalProps> = ({
                 onChange={(e) => setEventType(e.target.value as FarmEventType)}
                 className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 focus:outline-hidden focus:ring-1 focus:ring-emerald-700 min-h-[40px]"
               >
-                <option value="irrigation">Irrigation</option>
-                <option value="fertilizer">Fertilizer</option>
-                <option value="spray">Spray / Medicine</option>
-                <option value="sowing">Sowing</option>
-                <option value="weeding">Weeding</option>
-                <option value="observation">Observation</option>
-                <option value="harvest">Harvest</option>
-                <option value="other">Other</option>
+                <option value="land_prep">{t.eventTypes.land_prep}</option>
+                <option value="irrigation">{t.eventTypes.irrigation}</option>
+                <option value="fertilizer">{t.eventTypes.fertilizer}</option>
+                <option value="spray">{t.eventTypes.spray}</option>
+                <option value="sowing">{t.eventTypes.sowing}</option>
+                <option value="weeding">{t.eventTypes.weeding}</option>
+                <option value="observation">{t.eventTypes.observation}</option>
+                <option value="harvest">{t.eventTypes.harvest}</option>
+                <option value="other">{t.eventTypes.other}</option>
               </select>
             </div>
 
@@ -195,7 +205,7 @@ export const QuickRecordModal: React.FC<QuickRecordModalProps> = ({
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="e.g. Irrigated 2 hours from borewell"
+              placeholder={t.quickRecordModal.titlePlaceholder}
               className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-hidden focus:ring-1 focus:ring-emerald-700 min-h-[40px]"
             />
           </div>
@@ -211,7 +221,7 @@ export const QuickRecordModal: React.FC<QuickRecordModalProps> = ({
                 min="0"
                 value={quantity}
                 onChange={(e) => setQuantity(e.target.value)}
-                placeholder="e.g. 50"
+                placeholder={t.record.quantityPlaceholder}
                 className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-hidden focus:ring-1 focus:ring-emerald-700 min-h-[40px]"
               />
             </div>
@@ -225,11 +235,12 @@ export const QuickRecordModal: React.FC<QuickRecordModalProps> = ({
                 onChange={(e) => setUnit(e.target.value)}
                 className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 focus:outline-hidden focus:ring-1 focus:ring-emerald-700 min-h-[40px]"
               >
-                <option value="hours">Hours</option>
-                <option value="kg">Kilograms (kg)</option>
-                <option value="bags">Bags</option>
-                <option value="liters">Liters</option>
-                <option value="quintals">Quintals</option>
+                <option value="hours">{t.units.hours}</option>
+                <option value="kg">{t.units.kg}</option>
+                <option value="bags">{t.units.bags}</option>
+                <option value="liters">{t.units.liters}</option>
+                <option value="ml">{t.units.ml}</option>
+                <option value="quintals">{t.units.quintals}</option>
               </select>
             </div>
           </div>
@@ -244,7 +255,7 @@ export const QuickRecordModal: React.FC<QuickRecordModalProps> = ({
               min="0"
               value={cost}
               onChange={(e) => setCost(e.target.value)}
-              placeholder="e.g. 1200"
+              placeholder={t.record.costPlaceholder}
               className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-hidden focus:ring-1 focus:ring-emerald-700 min-h-[40px]"
             />
           </div>

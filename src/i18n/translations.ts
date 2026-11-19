@@ -15,6 +15,10 @@ export interface TranslationDictionary {
     record: string;
     insights: string;
     market: string;
+    mainNavigation: string;
+    mobileNavigation: string;
+    profileAndSettings: string;
+    settingsSuffix: string;
   };
   actions: {
     recordActivity: string;
@@ -91,12 +95,23 @@ export interface TranslationDictionary {
     varietyUnknown: string;
     sowingDateUnrecorded: string;
     yieldTargetActual: string;
+    yieldNotRecorded: string;
+    quintalsUnit: string;
+    kgUnit: string;
+    targetPrefix: string;
+    targetNotSet: string;
     neverConvertedToZero: string;
     recordedEventsFor: string;
     showingFieldLog: string;
     stageLandPrep: string;
     plotAcresTotal: string;
     cropLabel: string;
+    expectedHarvestLabel: string;
+    actualHarvestLabel: string;
+    harvestNotRecorded: string;
+    priorDemoCycleTitle: string;
+    priorDemoCycleNotice: string;
+    unvalidatedAgronomyBadge: string;
   };
   record: {
     title: string;
@@ -172,6 +187,40 @@ export interface TranslationDictionary {
     listeningStatus: string;
     tapToRecordPrompt: string;
     voiceProtectedNotice: string;
+    captureNewTab: string;
+    activityTimelineTab: string;
+    viewInTimeline: string;
+    languagePrefix: string;
+    photoReceiptShort: string;
+    oneTapReadyShort: string;
+    structuredEntryShort: string;
+    activityLabel: string;
+    inputProductLabel: string;
+    areaLabel: string;
+    dateLabel: string;
+    unknownValue: string;
+    savePendingTooltip: string;
+    inputProductOptionalLabel: string;
+    inputProductPlaceholder: string;
+    costOptionalLabel: string;
+    costPlaceholder: string;
+    quantityPlaceholder: string;
+    cameraHeaderTitle: string;
+    cameraHeaderSubtitle: string;
+    cameraNetworkLabel: string;
+    cameraOfflineLabel: string;
+    cameraOnlineLabel: string;
+    cameraSwitchOnline: string;
+    cameraSimulateOffline: string;
+    cameraVoiceCombined: string;
+    cameraQuickSamplesTitle: string;
+    cameraSampleFertilizer: string;
+    cameraSampleReceipt: string;
+    cameraSampleFieldPhoto: string;
+    cameraQualityNotice: string;
+    cameraAnalyzing: string;
+    cameraSafetyPolicyTitle: string;
+    cameraSafetyPolicyDesc: string;
   };
   insights: {
     title: string;
@@ -252,6 +301,63 @@ export interface TranslationDictionary {
     activityPest: string;
     activityPesticide: string;
     activityHarvest: string;
+    notApplicableConfidence: string;
+    confidenceLabel: string;
+    asrConfidenceLabel: string;
+    sensorConfidenceLabel: string;
+    syntheticDemoConfidenceLabel: string;
+    demoSyntheticNotice: string;
+    realFarmerSpend: string;
+    demoSyntheticSpend: string;
+    filteredActivitiesCount: string;
+    selectedPlotLabel: string;
+    hideSummaryTooltip: string;
+    showMemorySummary: string;
+    excludedFromRealTotals: string;
+    demoRefLabel: string;
+    demoConfirmedCountLabel: string;
+    farmerConfirmedCountLabel: string;
+    pendingReviewCountLabel: string;
+    receiptsTooltip: string;
+    photosTooltip: string;
+    gpsTooltip: string;
+    aiEstimatesFlagged: string;
+    notFactsTag: string;
+    projectedLabel: string;
+    searchPlaceholder: string;
+    filterByPlotAria: string;
+    filterByTypeAria: string;
+    filterByEvidenceAria: string;
+    allEvidenceSources: string;
+    estimatesTag: string;
+    noMatchingRecords: string;
+    resetFilterCriteria: string;
+    inputLabel: string;
+    quantityPlaceholder: string;
+    unitPlaceholder: string;
+    capturedVoiceTranscript: string;
+    activityFieldLabel: string;
+    inputAppliedLabel: string;
+    noneRecorded: string;
+    attachedEvidenceLabel: string;
+    documentVerifiedBadge: string;
+    vendorStationLabel: string;
+    invoiceDateLabel: string;
+    itemQuantityLabel: string;
+    billedTotalLabel: string;
+    coordinatesLabel: string;
+    accuracyLabel: string;
+    locationLabel: string;
+    stationLabel: string;
+    conditionLabel: string;
+    tempLabel: string;
+    rainfallLabel: string;
+    humidityLabel: string;
+    productLabel: string;
+    manufacturerLabel: string;
+    activeIngredientLabel: string;
+    batchExpiryLabel: string;
+    fieldLabel: string;
   };
   sources: {
     farmer_reported: string;
@@ -281,6 +387,8 @@ export interface TranslationDictionary {
   };
   trustIndicators: {
     farmerConfirmed: string;
+    independentlyVerified: string;
+    unverified: string;
     pendingConfirmation: string;
     draft: string;
     conflicting: string;
@@ -288,6 +396,30 @@ export interface TranslationDictionary {
     demoIncomplete: string;
     estimated: string;
     unknown: string;
+  };
+  evidenceBadges: {
+    farmerReportedSub: string;
+    farmerReportedTip: string;
+    farmerConfirmedSub: string;
+    farmerConfirmedTip: string;
+    awaitingReviewSub: string;
+    awaitingReviewTip: string;
+    receiptAttachedSub: string;
+    receiptAttachedTip: string;
+    gpsCapturedSub: string;
+    gpsCapturedTip: string;
+    weatherStationSub: string;
+    weatherStationTip: string;
+    soilLabReportSub: string;
+    soilLabReportTip: string;
+    voiceCapturedSub: string;
+    voiceCapturedTip: string;
+    cameraProductSub: string;
+    cameraProductTip: string;
+    verifiedDocSub: string;
+    verifiedDocTip: string;
+    systemSub: string;
+    systemTip: string;
   };
   market: {
     title: string;
@@ -324,6 +456,10 @@ export interface TranslationDictionary {
     modalTitle: string;
     simulationBadge: string;
     simulationNote: string;
+    offlineBannerTitle: string;
+    offlineBannerDesc: string;
+    pendingBannerSuffix: string;
+    pendingBannerDesc: string;
   };
   resetModal: {
     title: string;
@@ -349,6 +485,7 @@ export interface TranslationDictionary {
     costLabel: string;
     savingLabel: string;
     dataPreservedNotice: string;
+    titlePlaceholder: string;
   };
   preferencesModal: {
     title: string;
@@ -438,13 +575,42 @@ export interface TranslationDictionary {
     sale: string;
     other: string;
   };
+  cropStages: {
+    land_preparation: string;
+    sowing: string;
+    vegetative: string;
+    flowering: string;
+    grain_filling: string;
+    maturity: string;
+    harvested: string;
+    unknown: string;
+  };
   units: {
     hours: string;
     kg: string;
     bags: string;
     liters: string;
+    ml: string;
     quintals: string;
     acres: string;
+  };
+  errors: {
+    quotaExceeded: string;
+    storageUnavailable: string;
+    corruptData: string;
+    duplicateRecord: string;
+    estimateCannotBeConfirmed: string;
+    recordNotFound: string;
+    saveActivityFailed: string;
+    saveQuickActionFailed: string;
+    titleRequired: string;
+    profileSaveFailed: string;
+    preferencesSaveFailed: string;
+    cameraDenied: string;
+    clearRecordsFailed: string;
+    clearProfileFailed: string;
+    clearPrefsFailed: string;
+    corruptQuarantineNotice: string;
   };
   common: {
     emptyTitle: string;
@@ -453,6 +619,11 @@ export interface TranslationDictionary {
     errorTitle: string;
     errorDesc: string;
     localCacheNote: string;
+    dismiss: string;
+    sunlightModeBanner: string;
+    editProfilePrefs: string;
+    qaPanelTooltip: string;
+    closeModalAria: string;
   };
 }
 
@@ -466,6 +637,10 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       record: 'నమోదు',
       insights: 'అంతర్దృష్టులు',
       market: 'మార్కెట్',
+      mainNavigation: 'ప్రధాన నావిగేషన్',
+      mobileNavigation: 'మొబైల్ నావిగేషన్',
+      profileAndSettings: 'ప్రొఫైల్ & సెట్టింగులు',
+      settingsSuffix: 'సెట్టింగులు',
     },
     actions: {
       recordActivity: 'పని నమోదు చేయండి',
@@ -542,12 +717,23 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       varietyUnknown: 'రకం: తెలియదు',
       sowingDateUnrecorded: 'విత్తిన తేదీ: ఇంకా నమోదు కాలేదు',
       yieldTargetActual: 'దిగుబడి లక్ష్యం / వాస్తవం',
+      yieldNotRecorded: 'దిగుబడి ఇంకా నమోదు కాలేదు',
+      quintalsUnit: 'క్వింటాళ్లు',
+      kgUnit: 'కిలోలు',
+      targetPrefix: 'లక్ష్యం',
+      targetNotSet: 'లక్ష్యం నిర్ణయించలేదు',
       neverConvertedToZero: 'ఎప్పుడూ 0 గా మార్చబడదు',
       recordedEventsFor: 'నమోదైన కార్యకలాపాలు',
       showingFieldLog: 'పొలం రికార్డు లాగ్',
       stageLandPrep: 'దశ: భూమి తయారీ',
       plotAcresTotal: 'మొత్తం 5.0 ఎకరాలు (ప్లాట్ A: 2.0 ఎకరం + ప్లాట్ B: 3.0 ఎకరాలు)',
       cropLabel: 'పంట',
+      expectedHarvestLabel: 'అంచనా కోత తేదీ',
+      actualHarvestLabel: 'వాస్తవ కోత తేదీ',
+      harvestNotRecorded: 'కోత తేదీ నమోదు కాలేదు',
+      priorDemoCycleTitle: 'మునుపటి పూర్తయిన డెమో పంట చక్రం (ప్రత్యేక చక్రం)',
+      priorDemoCycleNotice: 'ఇది ప్రస్తుత భూమి తయారీ దశకు భిన్నమైన మునుపటి నమూనా (డెమో) పంట చక్రం. ఇందులోని తేదీలు మరియు దిగుబడి ధృవీకరించని నమూనా విలువలు మాత్రమే.',
+      unvalidatedAgronomyBadge: 'ధృవీకరించని డెమో అంచనా',
     },
     record: {
       title: 'పని నమోదు (Record Activity)',
@@ -561,8 +747,8 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       formTabTitle: 'వివరమైన ఫారమ్',
       formTabDesc: 'పూర్తి వివరాలతో స్వయంగా నమోదు చేయండి',
       reviewExtractedTitle: 'నమోదు చేయబడిన వివరాల సమీక్ష',
-      reviewExtractedDesc: 'కంప్యూటర్ సేకరించిన వివరాలను సరిచూసి భద్రపరచండి. రైతు ధృవీకరణ తప్పనిసరి.',
-      unconfirmedNotice: 'గమనిక: ఈ వివరాలు ఇంకా ధృవీకరించబడలేదు.',
+      reviewExtractedDesc: 'కంప్యూటర్ సేకరించిన వివరాలను సరిచూసి భద్రపరచండి. రైతు నిర్ధారణ తప్పనిసరి (ఇది స్వతంత్ర థర్డ్-పార్టీ ధృవీకరణ కాదు).',
+      unconfirmedNotice: 'గమనిక: ఈ వివరాలు ఇంకా రైతు ద్వారా నిర్ధారించబడలేదు.',
       ruleBasedNotice: 'ఇది నియమ-ఆధారిత వాయిస్ గుర్తింపు ద్వారా గ్రహించబడింది.',
       dateNotice: 'తేదీ పేర్కొనబడలేదు; ఈరోజు తేదీ సమీక్ష కొరకు ఇవ్వబడింది.',
       clarificationNeeded: 'స్పష్టత అవసరం:',
@@ -623,13 +809,47 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       listeningStatus: 'తెలుగులో వినబడుతోంది...',
       tapToRecordPrompt: 'వాయిస్ రికార్డ్ చేయడానికి నొక్కండి (తెలుగు)',
       voiceProtectedNotice: 'మీ వ్యవసాయ పనిని సహజంగా మాట్లాడండి. మైక్రోఫోన్ అనుమతులు సురక్షితంగా కోరబడతాయి.',
+      captureNewTab: 'కొత్త పని నమోదు',
+      activityTimelineTab: 'పనుల టైమ్‌లైన్',
+      viewInTimeline: 'టైమ్‌లైన్‌లో చూడండి',
+      languagePrefix: 'భాష:',
+      photoReceiptShort: 'ఫోటో / రసీదు',
+      oneTapReadyShort: '1-ట్యాప్ సిద్ధం',
+      structuredEntryShort: 'వివరమైన ఫారమ్',
+      activityLabel: 'పని:',
+      inputProductLabel: 'ఉత్పాదకం / మందు:',
+      areaLabel: 'విస్తీర్ణం:',
+      dateLabel: 'తేదీ:',
+      unknownValue: 'తెలియదు',
+      savePendingTooltip: 'రైతు నిర్ధారణ పెండింగ్‌గా భద్రపరచండి',
+      inputProductOptionalLabel: 'ఉపయోగించిన ఉత్పాదకం / మందు (ఐచ్ఛికం)',
+      inputProductPlaceholder: 'ఉదా: యూరియా, డిఎపి, వేప నూనె',
+      costOptionalLabel: 'ఖర్చు (₹ రూపాయలలో, ఐచ్ఛికం)',
+      costPlaceholder: 'ఉదా: 1200',
+      quantityPlaceholder: 'ఉదా: 45',
+      cameraHeaderTitle: 'కెమెరా & రసీదు ఆధారం',
+      cameraHeaderSubtitle: 'ఫోటో లేదా కొనుగోలు రసీదును జతచేసి వివరాలు సరిచూడండి.',
+      cameraNetworkLabel: 'నెట్‌వర్క్ & ప్రాసెసింగ్ స్థితి:',
+      cameraOfflineLabel: 'ఆఫ్‌లైన్ / తక్కువ నెట్‌వర్క్ మోడ్',
+      cameraOnlineLabel: 'ఆన్‌లైన్ / కనెక్ట్ చేయబడింది',
+      cameraSwitchOnline: 'ఆన్‌లైన్‌కు మార్చండి',
+      cameraSimulateOffline: 'ఆఫ్‌లైన్ క్యాప్చర్ పరీక్షించండి',
+      cameraVoiceCombined: 'వాయిస్ + కెమెరా కలిపి నమోదు',
+      cameraQuickSamplesTitle: 'నమూనా ఫోటో / రసీదు పరీక్ష:',
+      cameraSampleFertilizer: 'ఎరువుల ప్యాకెట్',
+      cameraSampleReceipt: 'రసీదు / ఇన్‌వాయిస్',
+      cameraSampleFieldPhoto: 'పొలం ఫోటో',
+      cameraQualityNotice: 'ఫోటో నాణ్యత గమనిక:',
+      cameraAnalyzing: 'ఫోటో విశ్లేషించబడుతోంది...',
+      cameraSafetyPolicyTitle: 'AI వ్యవసాయ భద్రతా విధానం',
+      cameraSafetyPolicyDesc: 'ఫోటోలు లేదా రసీదులు దృశ్య ఆధారంగా మాత్రమే ఉపయోగపడతాయి; స్వతంత్ర క్షేత్ర ధృవీకరణగా పరిగణించబడవు.',
     },
     insights: {
       title: 'పొలం అంతర్దృష్టులు & విశ్లేషణ',
       subtitle: 'ఫీల్డ్ ఇంటెలిజెన్స్ · "ఏం జరుగుతోంది మరియు ఎందుకు?"',
       tagline: 'మేము గుర్తుంచుకుంటాము. అర్థం చేసుకుంటాము. ఆలోచించడానికి సహాయపడతాము. మీరు నిర్ణయిస్తారు.',
       demoBadge: 'డెమో అంతర్దృష్టి · దశ 0.5',
-      groundedNotice: 'అన్ని విశ్లేషణాత్మక పరిశీలనలు ధృవీకరించబడిన రైతు రికార్డుల ఆధారంగా మాత్రమే ఉంటాయి.',
+      groundedNotice: 'అన్ని విశ్లేషణాత్మక పరిశీలనలు రైతు నిర్ధారించిన రికార్డుల ఆధారంగా మాత్రమే ఉంటాయి.',
       policyLabel: 'సిఫార్సు విధానం:',
       styleLabel: 'శైలి',
       observationLabel: 'పరిశీలన #',
@@ -641,7 +861,7 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       recordFirstButton: 'మొదటి పనిని నమోదు చేయండి',
       savedDecisionNote: 'రైతు ఎంపిక భద్రపరచబడింది: బేస్‌లైన్ ఆమోదించబడింది. సిస్టమ్ మెమరీ అప్‌డేట్ అయింది.',
       sampleInsightTitle: 'ప్రాథమిక పొలం బేస్‌లైన్ పరిశీలన',
-      sampleInsightDetail: 'రసపూడిపాలెంలోని రవి కుమార్ గారి పొలం (5.0 ఎకరాలు) ప్లాట్ A (2 ఎకరాల వరి) మరియు ప్లాట్ B (3 ఎకరాల వేరుశనగ) ప్రారంభ దశలో నమోదయ్యాయి. ఇంకా ఎలాంటి ఎరువులు లేదా కోత రసీదులు ధృవీకరించబడలేదు. మీరు పనులను నమోదు చేసేకొద్దీ క్షేత్ర స్థాయి పోలికలు సక్రియం అవుతాయి.',
+      sampleInsightDetail: 'రసపూడిపాలెంలోని రవి కుమార్ గారి పొలం (5.0 ఎకరాలు) ప్లాట్ A (2 ఎకరాల వరి) మరియు ప్లాట్ B (3 ఎకరాల వేరుశనగ) ప్రారంభ దశలో నమోదయ్యాయి. ఇంకా ఎలాంటి ఎరువులు లేదా కోత రికార్డులు రైతు నిర్ధారించలేదు. మీరు పనులను నమోదు చేసేకొద్దీ క్షేత్ర స్థాయి పోలికలు సక్రియం అవుతాయి.',
       sampleInsightRecommendation: 'భూమి తయారీ పూర్తయిన తర్వాత ప్లాట్ సరిహద్దులను సరిచూసి, విత్తనాలు నాటిన సమయాన్ని నమోదు చేయండి.',
     },
     timeline: {
@@ -681,7 +901,7 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       editModalSubtitle: 'మార్పులు ఆడిట్ హిస్టరీలో నమోదు చేయబడతాయి.',
       demoRecordBadge: 'డెమో రికార్డు',
       farmerCreatedBadge: 'రైతు రికార్డు',
-      confirmedByLabel: 'ధృవీకరించిన వారు',
+      confirmedByLabel: 'నిర్ధారించిన వారు',
       activityTitleLabel: 'పని ముఖ్యాంశం *',
       recordedQuantityLabel: 'నమోదైన పరిమాణం',
       notesLabel: 'వివరాలు / గమనికలు',
@@ -703,19 +923,76 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       activityPest: '🐛 తెగులు పరిశీలన',
       activityPesticide: '🧴 పురుగుమందు పిచికారీ',
       activityHarvest: '🌾 పంట కోత',
+      notApplicableConfidence: 'వర్తించదు (కొలిచిన విశ్వసనీయత స్కోరు లేదు)',
+      confidenceLabel: 'విశ్వసనీయత (Confidence)',
+      asrConfidenceLabel: 'వాయిస్ గుర్తింపు స్కోరు',
+      sensorConfidenceLabel: 'సెన్సార్ కాలిబ్రేషన్ స్కోరు',
+      syntheticDemoConfidenceLabel: 'నమూనా డెమో మాత్రమే',
+      demoSyntheticNotice: 'డెమో ప్రదర్శన (నమూనా డేటా మాత్రమే — వాస్తవ రికార్డులను ప్రభావితం చేయదు)',
+      realFarmerSpend: 'వాస్తవ రైతు ఖర్చు',
+      demoSyntheticSpend: 'నమూనా డెమో మొత్తం',
+      filteredActivitiesCount: 'ఫిల్టర్ చేయబడిన పనులు',
+      selectedPlotLabel: 'ఎంచుకున్న ప్లాట్',
+      hideSummaryTooltip: 'సారాంశాన్ని దాచు',
+      showMemorySummary: 'ఫార్మ్ మెమరీ సారాంశం చూపు',
+      excludedFromRealTotals: 'వాస్తవ మొత్తాలలో కలపబడదు',
+      demoRefLabel: 'డెమో సూచన:',
+      demoConfirmedCountLabel: 'డెమో నిర్ధారిత',
+      farmerConfirmedCountLabel: 'రైతు నిర్ధారిత',
+      pendingReviewCountLabel: 'సమీక్ష పెండింగ్',
+      receiptsTooltip: 'జతచేసిన రసీదులు',
+      photosTooltip: 'జతచేసిన ఫోటోలు',
+      gpsTooltip: 'GPS స్థాన వివరాలు',
+      aiEstimatesFlagged: 'AI అంచనాలు గుర్తించబడ్డాయి',
+      notFactsTag: '(వాస్తవాలు కావు)',
+      projectedLabel: 'అంచనా',
+      searchPlaceholder: 'ఉత్పాదకం, పని, తేదీ వెతకండి...',
+      filterByPlotAria: 'ప్లాట్ ప్రకారం ఫిల్టర్ చేయండి',
+      filterByTypeAria: 'పని రకం ప్రకారం ఫిల్టర్ చేయండి',
+      filterByEvidenceAria: 'ఆధార మూలం ప్రకారం ఫిల్టర్ చేయండి',
+      allEvidenceSources: 'అన్ని ఆధార మూలాలు',
+      estimatesTag: '(అంచనాలు)',
+      noMatchingRecords: 'మీ ఫిల్టర్ ప్రమాణాలకు సరిపోలే పనుల రికార్డులు లేవు.',
+      resetFilterCriteria: 'ఫిల్టర్లను రీసెట్ చేయండి',
+      inputLabel: 'ఉత్పాదకం:',
+      quantityPlaceholder: 'ఉదా: 40',
+      unitPlaceholder: 'కిలోలు, గంటలు, బస్తాలు...',
+      capturedVoiceTranscript: 'నమోదైన వాయిస్ ట్రాన్స్‌క్రిప్ట్:',
+      activityFieldLabel: 'పని రకం',
+      inputAppliedLabel: 'ఉపయోగించిన ఉత్పాదకం',
+      noneRecorded: 'ఏదీ నమోదు కాలేదు',
+      attachedEvidenceLabel: 'జోడించిన ఆధారాలు:',
+      documentVerifiedBadge: 'థర్డ్-పార్టీ ధృవీకరించిన పత్రం',
+      vendorStationLabel: 'విక్రేత / కేంద్రం:',
+      invoiceDateLabel: 'రసీదు తేదీ:',
+      itemQuantityLabel: 'వస్తువు / పరిమాణం:',
+      billedTotalLabel: 'బిల్లు మొత్తం:',
+      coordinatesLabel: 'అక్షాంశం / రేఖాంశం:',
+      accuracyLabel: 'ఖచ్చితత్వం:',
+      locationLabel: 'స్థానం:',
+      stationLabel: 'వాతావరణ కేంద్రం:',
+      conditionLabel: 'స్థితి:',
+      tempLabel: 'ఉష్ణోగ్రత:',
+      rainfallLabel: 'వర్షపాతం:',
+      humidityLabel: 'తేమ:',
+      productLabel: 'ఉత్పాదకం:',
+      manufacturerLabel: 'తయారీదారు:',
+      activeIngredientLabel: 'ప్రధాన రసాయనం:',
+      batchExpiryLabel: 'బ్యాచ్ / గడువు తేదీ:',
+      fieldLabel: 'క్షేత్రం:',
     },
     sources: {
       farmer_reported: 'రైతు నమోదు చేసినది',
       farmer_voice: 'రైతు వాయిస్ రికార్డింగ్',
       ai_extracted: 'AI ద్వారా స్వీకరించబడింది',
       ai_estimated: 'AI అంచనా వేసినది',
-      receipt_verified: 'రసీదు ద్వారా ధృవీకరించబడింది',
+      receipt_verified: 'రసీదు జతచేయబడింది (కొనుగోలు ఆధారం)',
       camera_product: 'కెమెరా ప్రొడక్ట్ స్కాన్',
       gps_captured: 'GPS పొలం స్థానం',
       weather_data: 'వాతావరణ కేంద్రం సమాచారం',
       soil_report: 'నేల పరీక్ష నివేదిక',
       farmer_confirmed: 'రైతు నిర్ధారించారు',
-      verified_document: 'ధృవీకృత పత్రం',
+      verified_document: 'థర్డ్-పార్టీ ధృవీకరించిన పత్రం',
       demo_data: 'డెమో సమాచారం',
       unknown: 'తెలియని మూలం',
     },
@@ -723,7 +1000,7 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       draft: 'డ్రాఫ్ట్ (ముసాయిదా)',
       pending_confirmation: 'నిర్ధారణ పెండింగ్‌లో ఉంది',
       pending_ai_processing: 'AI ప్రాసెసింగ్ పెండింగ్‌లో ఉంది',
-      farmer_confirmed: 'రైతు ధృవీకరించారు',
+      farmer_confirmed: 'రైతు నిర్ధారించారు',
       conflicting: 'విరుద్ధమైన సమాచారం',
       demo: 'డెమో సమాచారం',
       demo_incomplete: 'డెమో (అసంపూర్ణం)',
@@ -731,7 +1008,9 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       unknown: 'తెలియదు',
     },
     trustIndicators: {
-      farmerConfirmed: 'రైతు ధృవీకరించారు',
+      farmerConfirmed: 'రైతు నిర్ధారించారు',
+      independentlyVerified: 'స్వతంత్రంగా ధృవీకరించబడింది',
+      unverified: 'స్వతంత్ర ధృవీకరణ లేదు',
       pendingConfirmation: 'రైతు నిర్ధారణ పెండింగ్‌లో ఉంది',
       draft: 'డ్రాఫ్ట్',
       conflicting: 'సరిపోలని వివరాలు',
@@ -739,6 +1018,30 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       demoIncomplete: 'డెమో (అసంపూర్ణం)',
       estimated: 'అంచనా',
       unknown: 'తెలియదు',
+    },
+    evidenceBadges: {
+      farmerReportedSub: 'స్వీయ నివేదిక',
+      farmerReportedTip: 'రైతు స్వయంగా నమోదు చేసిన వివరాలు (స్వతంత్ర థర్డ్-పార్టీ ధృవీకరణ కాదు)',
+      farmerConfirmedSub: 'రైతు నిర్ధారణ',
+      farmerConfirmedTip: 'రైతు సమీక్షించి నిర్ధారించిన రికార్డు (ఇది స్వతంత్ర థర్డ్-పార్టీ ధృవీకరణ కాదు)',
+      awaitingReviewSub: 'సమీక్ష పెండింగ్',
+      awaitingReviewTip: 'AI ద్వారా సేకరించబడింది — రైతు సమీక్ష మరియు నిర్ధారణ పెండింగ్‌లో ఉంది',
+      receiptAttachedSub: 'కొనుగోలు రసీదు',
+      receiptAttachedTip: 'కొనుగోలు ఇన్‌వాయిస్ లేదా రసీదు జతచేయబడింది (పొలంలో వాడకాన్ని స్వతంత్రంగా ధృవీకరించదు)',
+      gpsCapturedSub: 'GPS స్థానం',
+      gpsCapturedTip: 'GPS స్థానం నమోదైంది (స్థానం మాత్రమే పని జరిగిందని స్వతంత్రంగా ధృవీకరించదు)',
+      weatherStationSub: 'వాతావరణ డేటా',
+      weatherStationTip: 'వాతావరణ కేంద్రం సమాచారం (పొలం పనిని స్వతంత్రంగా ధృవీకరించదు)',
+      soilLabReportSub: 'ల్యాబ్ నివేదిక',
+      soilLabReportTip: 'మట్టి పరీక్ష ల్యాబ్ నివేదిక జతచేయబడింది',
+      voiceCapturedSub: 'వాయిస్ నమోదు',
+      voiceCapturedTip: 'రైతు వాయిస్ ద్వారా నమోదు చేసిన వివరాలు (స్వతంత్ర ధృవీకరణ కాదు)',
+      cameraProductSub: 'ఫోటో ఆధారం',
+      cameraProductTip: 'దృశ్య ఫోటో జతచేయబడింది (తేదీ లేదా పరిమాణాన్ని స్వతంత్రంగా ధృవీకరించదు)',
+      verifiedDocSub: 'థర్డ్-పార్టీ పత్రం',
+      verifiedDocTip: 'స్వతంత్ర థర్డ్-పార్టీ ధృవీకరించిన పత్రం',
+      systemSub: 'సిస్టమ్',
+      systemTip: 'సిస్టమ్ రికార్డు — స్వతంత్ర ధృవీకరణ లేదు',
     },
     market: {
       title: 'మార్కెట్ & వాణిజ్య సన్నద్ధత',
@@ -777,6 +1080,10 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       simulationBadge: 'సిమ్యులేషన్ మాత్రమే',
       simulationNote:
         'గమనిక: ఈ యాప్ బ్రౌజర్ లోకల్ స్టోరేజ్‌ని ఉపయోగిస్తుంది. ఫేజ్ 0.5లో రిమోట్ క్లౌడ్ సర్వర్ లేదా మల్టీ-డివైస్ సింక్ అనుసంధానించబడలేదు.',
+      offlineBannerTitle: 'ఆఫ్‌లైన్ మోడ్ (సిమ్యులేషన్)',
+      offlineBannerDesc: 'నమోదు చేసిన పనులు మీ పరికరంలో స్థానికంగా భద్రపరచబడతాయి.',
+      pendingBannerSuffix: 'పనులు స్థానికంగా భద్రపరచబడ్డాయి · సింక్ పెండింగ్',
+      pendingBannerDesc: 'ఈ యాప్‌లో రిమోట్ క్లౌడ్ సింక్ సిమ్యులేట్ చేయబడింది.',
     },
     resetModal: {
       title: 'డేటాను రీసెట్ చేయాలా?',
@@ -802,6 +1109,7 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       costLabel: 'ఖర్చు (రూపాయలలో, వర్తిస్తే)',
       savingLabel: 'భద్రపరుస్తోంది...',
       dataPreservedNotice: 'మీరు నమోదు చేసిన వివరాలు సురక్షితంగా ఉన్నాయి. మళ్ళీ ప్రయత్నించవచ్చు.',
+      titlePlaceholder: 'ఉదా: బోరుబావి నుండి 2 గంటలు నీటిపారుదల',
     },
     preferencesModal: {
       title: 'రైతు ప్రొఫైల్ & ప్రాధాన్యతలు',
@@ -891,13 +1199,42 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       sale: 'అమ్మకం',
       other: 'ఇతర పని',
     },
+    cropStages: {
+      land_preparation: 'భూమి తయారీ',
+      sowing: 'విత్తనాలు నాటడం',
+      vegetative: 'శాఖీయ పెరుగుదల దశ',
+      flowering: 'పూత దశ',
+      grain_filling: 'గింజ కట్టే దశ',
+      maturity: 'పక్వత దశ',
+      harvested: 'కోత పూర్తయింది',
+      unknown: 'తెలియదు',
+    },
     units: {
       hours: 'గంటలు',
       kg: 'కిలోగ్రాములు (కేజీ)',
       bags: 'బస్తాలు / సంచులు',
       liters: 'లీటర్లు',
+      ml: 'మి.లీ (ml)',
       quintals: 'క్వింటాళ్లు',
       acres: 'ఎకరాలు',
+    },
+    errors: {
+      quotaExceeded: 'పరికర నిల్వ నిండిపోయింది. పాత డేటాను తొలగించి మళ్లీ ప్రయత్నించండి.',
+      storageUnavailable: 'బ్రౌజర్ స్థానిక నిల్వ అందుబాటులో లేదు.',
+      corruptData: 'నిల్వ చేసిన డేటా దెబ్బతింది. సురక్షిత బ్యాకప్ తీసుకోబడింది.',
+      duplicateRecord: 'ఇలాంటి రికార్డు ఇటీవలే నమోదైంది.',
+      estimateCannotBeConfirmed: 'AI అంచనా రికార్డులను వాస్తవ క్షేత్ర పనులుగా రైతు నిర్ధారించలేరు.',
+      recordNotFound: 'రికార్డు స్థానిక నిల్వలో కనుగొనబడలేదు. డెమో రికార్డులను నిర్ధారించలేము.',
+      saveActivityFailed: 'పని రికార్డును భద్రపరచడం విఫలమైంది. దయచేసి మళ్ళీ ప్రయత్నించండి.',
+      saveQuickActionFailed: 'త్వరిత పనిని భద్రపరచడం విఫలమైంది.',
+      titleRequired: 'దయచేసి పని ముఖ్యాంశాన్ని నమోదు చేయండి.',
+      profileSaveFailed: 'ప్రొఫైల్ భద్రపరచడం విఫలమైంది. మీ మార్పులు ఈ సెషన్‌కు మాత్రమే వర్తిస్తాయి.',
+      preferencesSaveFailed: 'ప్రాధాన్యతలు భద్రపరచడం విఫలమైంది. పరికర నిల్వను తనిఖీ చేయండి.',
+      cameraDenied: 'కెమెరా అనుమతి నిరాకరించబడింది. దయచేసి ఫారమ్ లేదా నమూనా ఫోటోను ఉపయోగించండి.',
+      clearRecordsFailed: 'రైతు పనుల రికార్డులను క్లియర్ చేయడం విఫలమైంది.',
+      clearProfileFailed: 'రైతు ప్రొఫైల్‌ను క్లియర్ చేయడం విఫలమైంది.',
+      clearPrefsFailed: 'యాప్ ప్రాధాన్యతలను క్లియర్ చేయడం విఫలమైంది.',
+      corruptQuarantineNotice: 'దెబ్బతిన్న స్థానిక నిల్వ గుర్తించబడింది మరియు సురక్షితంగా వేరు చేయబడింది.',
     },
     common: {
       emptyTitle: 'మీ వ్యవసాయ చరిత్ర ఇక్కడ ప్రారంభమవుతుంది',
@@ -906,6 +1243,11 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       errorTitle: 'నిల్వ లేదా లోడింగ్ సమస్య ఎదురైంది',
       errorDesc: 'మీ భద్రపరచబడిన వివరాలు సురక్షితంగా ఉన్నాయి. డివైస్ మెమరీలో డేటా భద్రంగా ఉంది.',
       localCacheNote: 'స్థానిక పరికర నిల్వ భద్రంగా ఉంచబడింది.',
+      dismiss: 'తీసివేయి',
+      sunlightModeBanner: 'ఎండ వెలుగు కోసం ఎక్కువ కాంట్రాస్ట్ మోడ్ సక్రియంగా ఉంది',
+      editProfilePrefs: 'ప్రొఫైల్ & ప్రాధాన్యతలను సవరించండి',
+      qaPanelTooltip: 'QA మరియు డెమో పరీక్షా నియంత్రణలను తెరవండి',
+      closeModalAria: 'మోడల్ మూసివేయి',
     },
   },
 
@@ -918,6 +1260,10 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       record: 'Record',
       insights: 'Insights',
       market: 'Market',
+      mainNavigation: 'Main Navigation',
+      mobileNavigation: 'Mobile Navigation',
+      profileAndSettings: 'Profile and Settings',
+      settingsSuffix: 'Settings',
     },
     actions: {
       recordActivity: 'Record Activity',
@@ -994,12 +1340,23 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       varietyUnknown: 'Variety: Unknown',
       sowingDateUnrecorded: 'Sowing date: Not yet recorded',
       yieldTargetActual: 'Yield Target / Actual',
+      yieldNotRecorded: 'Yield not recorded',
+      quintalsUnit: 'Quintals',
+      kgUnit: 'kg',
+      targetPrefix: 'Target',
+      targetNotSet: 'Target not set',
       neverConvertedToZero: 'Never converted to 0',
       recordedEventsFor: 'Recorded Events for',
       showingFieldLog: 'Showing field log',
       stageLandPrep: 'Stage: Land preparation',
       plotAcresTotal: 'Total 5.0 Acres (Plot A: 2.0 Ac + Plot B: 3.0 Ac)',
       cropLabel: 'Crop',
+      expectedHarvestLabel: 'Expected Harvest',
+      actualHarvestLabel: 'Actual Harvest',
+      harvestNotRecorded: 'Harvest date not recorded',
+      priorDemoCycleTitle: 'Prior Completed Demo Cycle (Separate Cycle)',
+      priorDemoCycleNotice: 'Shown separately from this plot’s current land preparation cycle. Dates and yield below are unvalidated synthetic demo placeholders, not authoritative agronomic schedules.',
+      unvalidatedAgronomyBadge: 'Unvalidated Demo Agronomy',
     },
     record: {
       title: 'Record Farm Activity',
@@ -1013,8 +1370,8 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       formTabTitle: 'Manual Entry Form',
       formTabDesc: 'Structured entry with custom values',
       reviewExtractedTitle: 'Review Extracted Field Routine',
-      reviewExtractedDesc: 'Verify extracted parameters before saving. Farmer confirmation is required.',
-      unconfirmedNotice: 'Notice: This drafted entry requires explicit confirmation.',
+      reviewExtractedDesc: 'Review extracted parameters before saving. Farmer confirmation is required (not independent third-party verification).',
+      unconfirmedNotice: 'Notice: This drafted entry requires explicit farmer confirmation.',
       ruleBasedNotice: 'Extracted with deterministic rule-based natural language parsing.',
       dateNotice: 'Date was not spoken; assigned local today for review.',
       clarificationNeeded: 'Clarification Needed:',
@@ -1075,6 +1432,40 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       listeningStatus: 'Listening in English...',
       tapToRecordPrompt: 'Tap to Record Voice (English)',
       voiceProtectedNotice: 'Speak your farm activity naturally. Microphones are protected and explicitly requested.',
+      captureNewTab: 'Capture New',
+      activityTimelineTab: 'Activity Timeline',
+      viewInTimeline: 'View in timeline',
+      languagePrefix: 'Language:',
+      photoReceiptShort: 'Photo / Receipt',
+      oneTapReadyShort: '1-Tap Ready',
+      structuredEntryShort: 'Structured Entry',
+      activityLabel: 'Activity:',
+      inputProductLabel: 'Input / Product:',
+      areaLabel: 'Area:',
+      dateLabel: 'Date:',
+      unknownValue: 'Unknown',
+      savePendingTooltip: 'Save as pending farmer confirmation',
+      inputProductOptionalLabel: 'Input / Product Used (Optional)',
+      inputProductPlaceholder: 'e.g. Urea, DAP, Neem Oil',
+      costOptionalLabel: 'Cost Incurred (₹ INR, Optional)',
+      costPlaceholder: 'e.g. 1200',
+      quantityPlaceholder: 'e.g. 45',
+      cameraHeaderTitle: 'Camera & Receipt Evidence',
+      cameraHeaderSubtitle: 'Attach a field photo or purchase receipt and review details.',
+      cameraNetworkLabel: 'Network & Processing Mode:',
+      cameraOfflineLabel: 'Offline / Low-Connectivity Mode',
+      cameraOnlineLabel: 'Online / Connected',
+      cameraSwitchOnline: 'Switch to Online',
+      cameraSimulateOffline: 'Simulate Offline Capture',
+      cameraVoiceCombined: 'Combined Voice + Camera Workflow',
+      cameraQuickSamplesTitle: 'Quick Sample Evidence Tests:',
+      cameraSampleFertilizer: 'Fertilizer Package',
+      cameraSampleReceipt: 'Receipt / Invoice',
+      cameraSampleFieldPhoto: 'Crop Field Photo',
+      cameraQualityNotice: 'Image Quality Notice:',
+      cameraAnalyzing: 'Analyzing image...',
+      cameraSafetyPolicyTitle: 'AI Agricultural Safety Policy',
+      cameraSafetyPolicyDesc: 'Photographs and receipts are supporting attachments only; they do not independently verify date, dosage, or field application.',
     },
     insights: {
       title: 'Farm Insights & Analysis',
@@ -1155,19 +1546,76 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       activityPest: '🐛 Pest Observation',
       activityPesticide: '🧴 Pesticide / Spray',
       activityHarvest: '🌾 Harvest',
+      notApplicableConfidence: 'Not applicable (No measured confidence score)',
+      confidenceLabel: 'Confidence',
+      asrConfidenceLabel: 'Speech recognition only',
+      sensorConfidenceLabel: 'Sensor calibration',
+      syntheticDemoConfidenceLabel: 'Synthetic demo only',
+      demoSyntheticNotice: 'Demo Demonstration (Synthetic data only — does not contaminate real farmer summaries)',
+      realFarmerSpend: 'Real Farmer Spend',
+      demoSyntheticSpend: 'Synthetic Demo Total',
+      filteredActivitiesCount: 'Filtered Activities',
+      selectedPlotLabel: 'Selected Plot',
+      hideSummaryTooltip: 'Hide summary',
+      showMemorySummary: 'Show Memory Summary',
+      excludedFromRealTotals: 'excluded from real totals',
+      demoRefLabel: 'Demo ref:',
+      demoConfirmedCountLabel: 'Demo Confirmed',
+      farmerConfirmedCountLabel: 'Farmer Confirmed',
+      pendingReviewCountLabel: 'pending review',
+      receiptsTooltip: 'Attached Receipts',
+      photosTooltip: 'Attached Photos',
+      gpsTooltip: 'GPS Location Observations',
+      aiEstimatesFlagged: 'AI Estimates Flagged',
+      notFactsTag: '(Not facts)',
+      projectedLabel: 'projected',
+      searchPlaceholder: 'Search input, activity, date...',
+      filterByPlotAria: 'Filter by Plot',
+      filterByTypeAria: 'Filter by Event Type',
+      filterByEvidenceAria: 'Filter by Evidence Source',
+      allEvidenceSources: 'All Evidence Sources',
+      estimatesTag: '(Estimates)',
+      noMatchingRecords: 'No activity records match your filter criteria.',
+      resetFilterCriteria: 'Reset filter criteria',
+      inputLabel: 'Input:',
+      quantityPlaceholder: 'e.g. 40',
+      unitPlaceholder: 'kg, hours, bags...',
+      capturedVoiceTranscript: 'Captured Voice Transcript:',
+      activityFieldLabel: 'Activity',
+      inputAppliedLabel: 'Input Applied',
+      noneRecorded: 'None recorded',
+      attachedEvidenceLabel: 'Attached Evidence:',
+      documentVerifiedBadge: 'Third-Party Document Verified',
+      vendorStationLabel: 'Vendor / Station:',
+      invoiceDateLabel: 'Date of Invoice:',
+      itemQuantityLabel: 'Item / Quantity:',
+      billedTotalLabel: 'Billed Total:',
+      coordinatesLabel: 'Coordinates:',
+      accuracyLabel: 'Accuracy:',
+      locationLabel: 'Location:',
+      stationLabel: 'Station:',
+      conditionLabel: 'Condition:',
+      tempLabel: 'Temp:',
+      rainfallLabel: 'Rainfall:',
+      humidityLabel: 'Humidity:',
+      productLabel: 'Product:',
+      manufacturerLabel: 'Manufacturer:',
+      activeIngredientLabel: 'Active Ingredient:',
+      batchExpiryLabel: 'Batch / Expiry:',
+      fieldLabel: 'Field:',
     },
     sources: {
       farmer_reported: 'Farmer Reported',
       farmer_voice: 'Farmer Voice',
       ai_extracted: 'AI Extracted',
       ai_estimated: 'AI Estimated',
-      receipt_verified: 'Receipt Verified',
+      receipt_verified: 'Receipt Attached (Purchase Record)',
       camera_product: 'Camera Product Capture',
       gps_captured: 'GPS Captured',
       weather_data: 'Weather Data',
       soil_report: 'Soil Report',
       farmer_confirmed: 'Farmer Confirmed',
-      verified_document: 'Verified Document',
+      verified_document: 'Third-Party Verified Document',
       demo_data: 'Demo Data',
       unknown: 'Unknown Source',
     },
@@ -1184,6 +1632,8 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
     },
     trustIndicators: {
       farmerConfirmed: 'Farmer Confirmed',
+      independentlyVerified: 'Independently Verified',
+      unverified: 'Not Independently Verified',
       pendingConfirmation: 'Pending Confirmation',
       draft: 'Draft',
       conflicting: 'Conflicting Data',
@@ -1191,6 +1641,30 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       demoIncomplete: 'Demo (Incomplete)',
       estimated: 'Estimated',
       unknown: 'Unknown',
+    },
+    evidenceBadges: {
+      farmerReportedSub: 'Self-reported',
+      farmerReportedTip: 'Recorded directly by farmer (not independently verified)',
+      farmerConfirmedSub: 'Farmer confirmed',
+      farmerConfirmedTip: 'Reviewed and confirmed by farmer (not independent third-party verification)',
+      awaitingReviewSub: 'Awaiting review',
+      awaitingReviewTip: 'Extracted by AI — awaiting farmer review and confirmation',
+      receiptAttachedSub: 'Receipt attached',
+      receiptAttachedTip: 'Purchase invoice or weighment slip attached (does not independently verify field application)',
+      gpsCapturedSub: 'GPS location',
+      gpsCapturedTip: 'GPS coordinates logged (location alone does not prove field activity occurred)',
+      weatherStationSub: 'Weather station',
+      weatherStationTip: 'Weather station observation (does not independently prove irrigation or field activity)',
+      soilLabReportSub: 'Lab report',
+      soilLabReportTip: 'Soil laboratory report attached',
+      voiceCapturedSub: 'Voice entry',
+      voiceCapturedTip: 'Recorded via farmer voice input (not independently verified)',
+      cameraProductSub: 'Photo evidence',
+      cameraProductTip: 'Visual photograph attached (does not automatically prove date, dosage, or application)',
+      verifiedDocSub: 'Third-party doc',
+      verifiedDocTip: 'Supported by an independent third-party verified document',
+      systemSub: 'System',
+      systemTip: 'System record — not independently verified',
     },
     market: {
       title: 'Market & Mandi Intelligence',
@@ -1229,6 +1703,10 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       simulationBadge: 'Simulation Only',
       simulationNote:
         'Note: This app uses browser local storage. No remote cloud server or multi-device sync is connected in Phase 0.5.',
+      offlineBannerTitle: 'Offline Mode (Simulated)',
+      offlineBannerDesc: 'Logged activities are safely saved to local device storage.',
+      pendingBannerSuffix: 'Activities Saved Locally · Pending Sync',
+      pendingBannerDesc: 'Remote cloud synchronization is simulated in this build.',
     },
     resetModal: {
       title: 'Reset Application Data?',
@@ -1254,6 +1732,7 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       costLabel: 'Cost in Rupees (if applicable)',
       savingLabel: 'Saving record...',
       dataPreservedNotice: 'Your entered details are preserved below. You can try saving again.',
+      titlePlaceholder: 'e.g. Irrigated 2 hours from borewell',
     },
     preferencesModal: {
       title: 'Farmer Profile & Preferences',
@@ -1343,13 +1822,42 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       sale: 'Produce Sale',
       other: 'Other Field Operation',
     },
+    cropStages: {
+      land_preparation: 'Land Preparation',
+      sowing: 'Sowing',
+      vegetative: 'Vegetative',
+      flowering: 'Flowering',
+      grain_filling: 'Grain Filling',
+      maturity: 'Maturity',
+      harvested: 'Harvested',
+      unknown: 'Unknown',
+    },
     units: {
       hours: 'Hours',
       kg: 'Kilograms (kg)',
       bags: 'Bags',
       liters: 'Liters',
+      ml: 'Milliliters (ml)',
       quintals: 'Quintals',
       acres: 'Acres',
+    },
+    errors: {
+      quotaExceeded: 'Device storage is full. Please free space or reset old records and retry.',
+      storageUnavailable: 'Browser local storage is unavailable in this session.',
+      corruptData: 'Corrupted local data was detected and safely quarantined.',
+      duplicateRecord: 'A matching activity record was already saved recently.',
+      estimateCannotBeConfirmed: 'Estimated records cannot be farmer-confirmed as recorded field facts.',
+      recordNotFound: 'Record not found in farmer storage. Demo records cannot be confirmed.',
+      saveActivityFailed: 'Failed to save activity record. Please retry.',
+      saveQuickActionFailed: 'Failed to save quick action record.',
+      titleRequired: 'Please enter an activity title.',
+      profileSaveFailed: 'Storage persistence failed. Your profile changes apply only to this session.',
+      preferencesSaveFailed: 'Failed to save preferences to local device storage.',
+      cameraDenied: 'Camera access was denied. Use the structured form or sample capture instead.',
+      clearRecordsFailed: 'Failed to clear farmer activity records.',
+      clearProfileFailed: 'Failed to clear farmer profile.',
+      clearPrefsFailed: 'Failed to clear application preferences.',
+      corruptQuarantineNotice: 'Corrupt local storage detected and safely quarantined.',
     },
     common: {
       emptyTitle: 'Your farm memory starts here',
@@ -1358,6 +1866,11 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       errorTitle: 'Storage or Loading Issue',
       errorDesc: 'Your saved information is safe. Local device memory preserved offline data.',
       localCacheNote: 'Local device storage preserved offline cache securely.',
+      dismiss: 'Dismiss',
+      sunlightModeBanner: 'High-Contrast Sunlight Mode Active',
+      editProfilePrefs: 'Edit Profile & Preferences',
+      qaPanelTooltip: 'Open QA and demo simulation controls',
+      closeModalAria: 'Close modal',
     },
   },
 
@@ -1370,6 +1883,10 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       record: 'दर्ज करें',
       insights: 'सुझाव',
       market: 'मंडी भाव',
+      mainNavigation: 'मुख्य नेविगेशन',
+      mobileNavigation: 'मोबाइल नेविगेशन',
+      profileAndSettings: 'प्रोफ़ाइल और सेटिंग्स',
+      settingsSuffix: 'सेटिंग्स',
     },
     actions: {
       recordActivity: 'कार्य दर्ज करें',
@@ -1446,12 +1963,23 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       varietyUnknown: 'किस्म: अज्ञात',
       sowingDateUnrecorded: 'बुवाई की तारीख: अभी दर्ज नहीं',
       yieldTargetActual: 'उपज लक्ष्य / वास्तविक',
+      yieldNotRecorded: 'उपज अभी दर्ज नहीं की गई',
+      quintalsUnit: 'क्विंटल',
+      kgUnit: 'किग्रा',
+      targetPrefix: 'लक्ष्य',
+      targetNotSet: 'लक्ष्य निर्धारित नहीं',
       neverConvertedToZero: 'कभी 0 में परिवर्तित नहीं किया जाता',
       recordedEventsFor: 'दर्ज की गई गतिविधियां',
       showingFieldLog: 'खेत गतिविधि लॉग',
       stageLandPrep: 'चरण: खेत तैयारी',
       plotAcresTotal: 'कुल 5.0 एकड़ (प्लॉट A: 2.0 एकड़ + प्लॉट B: 3.0 एकड़)',
       cropLabel: 'फसल',
+      expectedHarvestLabel: 'अपेक्षित कटाई',
+      actualHarvestLabel: 'वास्तविक कटाई',
+      harvestNotRecorded: 'कटाई की तारीख दर्ज नहीं',
+      priorDemoCycleTitle: 'पिछला पूर्ण डेमो फसल चक्र (अलग चक्र)',
+      priorDemoCycleNotice: 'यह वर्तमान खेत तैयारी चक्र से अलग एक पिछला कृत्रिम डेमो चक्र है। इसमें दी गई तारीखें और उपज असत्यापित डेमो मान हैं, आधिकारिक कृषि अवधि नहीं।',
+      unvalidatedAgronomyBadge: 'असत्यापित डेमो कृषि डेटा',
     },
     record: {
       title: 'कार्य दर्ज करें (Record Activity)',
@@ -1465,8 +1993,8 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       formTabTitle: 'विस्तृत फॉर्म',
       formTabDesc: 'सभी विवरण मैन्युअल रूप से दर्ज करें',
       reviewExtractedTitle: 'दर्ज विवरण की समीक्षा',
-      reviewExtractedDesc: 'सहेजने से पहले विवरण की पुष्टि करें। किसान पुष्टि अनिवार्य है।',
-      unconfirmedNotice: 'नोट: इस प्रविष्टि की अभी पुष्टि नहीं हुई है।',
+      reviewExtractedDesc: 'सहेजने से पहले विवरण की जांच करें। किसान पुष्टि अनिवार्य है (यह स्वतंत्र तृतीय-पक्ष सत्यापन नहीं है)।',
+      unconfirmedNotice: 'नोट: इस प्रविष्टि की अभी किसान द्वारा पुष्टि नहीं हुई है।',
       ruleBasedNotice: 'यह नियम-आधारित भाषा विश्लेषण द्वारा निकाला गया है।',
       dateNotice: 'तारीख बोली नहीं गई थी; समीक्षा के लिए आज की तारीख दी गई है।',
       clarificationNeeded: 'स्पष्टीकरण आवश्यक:',
@@ -1527,6 +2055,40 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       listeningStatus: 'हिंदी में सुन रहे हैं...',
       tapToRecordPrompt: 'आवाज़ रिकॉर्ड करने के लिए टैप करें (हिंदी)',
       voiceProtectedNotice: 'अपनी कृषि गतिविधि सामान्य रूप से बोलें। माइक्रोफ़ोन अनुमति सुरक्षित रूप से मांगी जाती है।',
+      captureNewTab: 'नया कार्य दर्ज करें',
+      activityTimelineTab: 'गतिविधि टाइमलाइन',
+      viewInTimeline: 'टाइमलाइन में देखें',
+      languagePrefix: 'भाषा:',
+      photoReceiptShort: 'फोटो / रसीद',
+      oneTapReadyShort: '1-टैप तैयार',
+      structuredEntryShort: 'विस्तृत फॉर्म',
+      activityLabel: 'कार्य:',
+      inputProductLabel: 'इनपुट / उत्पाद:',
+      areaLabel: 'क्षेत्रफल:',
+      dateLabel: 'तारीख:',
+      unknownValue: 'अज्ञात',
+      savePendingTooltip: 'किसान पुष्टि के लिए लंबित रूप में सहेजें',
+      inputProductOptionalLabel: 'प्रयुक्त इनपुट / उत्पाद (वैकल्पिक)',
+      inputProductPlaceholder: 'उदा. यूरिया, डीएपी, नीम का तेल',
+      costOptionalLabel: 'कुल खर्च (₹ रुपये में, वैकल्पिक)',
+      costPlaceholder: 'उदा. 1200',
+      quantityPlaceholder: 'उदा. 45',
+      cameraHeaderTitle: 'कैमरा एवं रसीद साक्ष्य',
+      cameraHeaderSubtitle: 'खेत की फोटो या खरीद रसीद जोड़ें और विवरण की जांच करें।',
+      cameraNetworkLabel: 'नेटवर्क और प्रोसेसिंग मोड:',
+      cameraOfflineLabel: 'ऑफ़लाइन / कम नेटवर्क मोड',
+      cameraOnlineLabel: 'ऑनलाइन / कनेक्टेड',
+      cameraSwitchOnline: 'ऑनलाइन मोड चुनें',
+      cameraSimulateOffline: 'ऑफ़लाइन कैप्चर परीक्षण करें',
+      cameraVoiceCombined: 'वॉइस + कैमरा संयुक्त मोड',
+      cameraQuickSamplesTitle: 'त्वरित नमूना परीक्षण:',
+      cameraSampleFertilizer: 'खाद पैकेट',
+      cameraSampleReceipt: 'रसीद / बिल',
+      cameraSampleFieldPhoto: 'खेत की फोटो',
+      cameraQualityNotice: 'फोटो गुणवत्ता सूचना:',
+      cameraAnalyzing: 'फोटो का विश्लेषण हो रहा है...',
+      cameraSafetyPolicyTitle: 'AI कृषि सुरक्षा नीति',
+      cameraSafetyPolicyDesc: 'फोटो या रसीद केवल सहायक प्रमाण हैं; ये तारीख, मात्रा या खेत में उपयोग का स्वतंत्र सत्यापन नहीं करते।',
     },
     insights: {
       title: 'खेत अंतर्दृष्टि एवं विश्लेषण',
@@ -1545,7 +2107,7 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       recordFirstButton: 'पहला कार्य दर्ज करें',
       savedDecisionNote: 'किसान का विकल्प सहेजा गया: आधार स्वीकार किया गया। सिस्टम मेमोरी अपडेट हुई।',
       sampleInsightTitle: 'खेत की प्रारंभिक आधार रेखा का अवलोकन',
-      sampleInsightDetail: 'रसपूडीपालेम में रवि कुमार जी के खेत (5.0 एकड़) में प्लॉट A (2 एकड़ धान) और प्लॉट B (3 एकड़ मूंगफली) शुरुआती जुताई अवस्था में पंजीकृत हैं। अभी कोई वाउचर या रसीद सत्यापित नहीं है। जैसे-जैसे आप काम दर्ज करेंगे, विश्लेषण सक्रिय होगा।',
+      sampleInsightDetail: 'रसपूडीपालेम में रवि कुमार जी के खेत (5.0 एकड़) में प्लॉट A (2 एकड़ धान) और प्लॉट B (3 एकड़ मूंगफली) शुरुआती जुताई अवस्था में पंजीकृत हैं। अभी कोई इनपुट या कटाई रिकॉर्ड किसान द्वारा पुष्ट नहीं हैं। जैसे-जैसे आप काम दर्ज करेंगे, विश्लेषण सक्रिय होगा।',
       sampleInsightRecommendation: 'खेत की तैयारी पूरी होने के बाद प्लॉट सीमाओं की पुष्टि करें और बुवाई का काम दर्ज करें।',
     },
     timeline: {
@@ -1607,19 +2169,76 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       activityPest: '🐛 कीट अवलोकन',
       activityPesticide: '🧴 कीटनाशक छिड़काव',
       activityHarvest: '🌾 कटाई',
+      notApplicableConfidence: 'लागू नहीं (मापा गया विश्वास स्कोर नहीं)',
+      confidenceLabel: 'विश्वास स्कोर (Confidence)',
+      asrConfidenceLabel: 'वॉइस पहचान स्कोर',
+      sensorConfidenceLabel: 'सेंसर कैलिब्रेशन स्कोर',
+      syntheticDemoConfidenceLabel: 'केवल कृत्रिम डेमो',
+      demoSyntheticNotice: 'डेमो प्रदर्शन (कृत्रिम डेटा — वास्तविक खर्च या सारांश को प्रभावित नहीं करता)',
+      realFarmerSpend: 'वास्तविक किसान खर्च',
+      demoSyntheticSpend: 'डेमो कृत्रिम कुल',
+      filteredActivitiesCount: 'फ़िल्टर की गई गतिविधियाँ',
+      selectedPlotLabel: 'चयनित प्लॉट',
+      hideSummaryTooltip: 'सारांश छिपाएं',
+      showMemorySummary: 'फार्म मेमोरी सारांश दिखाएं',
+      excludedFromRealTotals: 'वास्तविक कुल में शामिल नहीं',
+      demoRefLabel: 'डेमो संदर्भ:',
+      demoConfirmedCountLabel: 'डेमो पुष्ट',
+      farmerConfirmedCountLabel: 'किसान पुष्ट',
+      pendingReviewCountLabel: 'समीक्षा लंबित',
+      receiptsTooltip: 'संलग्न रसीदें',
+      photosTooltip: 'संलग्न फोटो',
+      gpsTooltip: 'GPS स्थान अवलोकन',
+      aiEstimatesFlagged: 'AI अनुमान चिह्नित',
+      notFactsTag: '(तथ्य नहीं)',
+      projectedLabel: 'अनुमानित',
+      searchPlaceholder: 'इनपुट, कार्य, तारीख खोजें...',
+      filterByPlotAria: 'प्लॉट के अनुसार फ़िल्टर करें',
+      filterByTypeAria: 'कार्य प्रकार के अनुसार फ़िल्टर करें',
+      filterByEvidenceAria: 'साक्ष्य स्रोत के अनुसार फ़िल्टर करें',
+      allEvidenceSources: 'सभी साक्ष्य स्रोत',
+      estimatesTag: '(अनुमान)',
+      noMatchingRecords: 'आपके फ़िल्टर मानदंडों से मेल खाने वाला कोई गतिविधि रिकॉर्ड नहीं है।',
+      resetFilterCriteria: 'फ़िल्टर रीसेट करें',
+      inputLabel: 'इनपुट:',
+      quantityPlaceholder: 'उदा. 40',
+      unitPlaceholder: 'किग्रा, घंटे, बोरी...',
+      capturedVoiceTranscript: 'दर्ज वॉइस ट्रांसक्रिप्ट:',
+      activityFieldLabel: 'कार्य',
+      inputAppliedLabel: 'प्रयुक्त इनपुट',
+      noneRecorded: 'कोई दर्ज नहीं',
+      attachedEvidenceLabel: 'संलग्न साक्ष्य:',
+      documentVerifiedBadge: 'तृतीय-पक्ष सत्यापित दस्तावेज़',
+      vendorStationLabel: 'विक्रेता / केंद्र:',
+      invoiceDateLabel: 'रसीद की तारीख:',
+      itemQuantityLabel: 'वस्तु / मात्रा:',
+      billedTotalLabel: 'कुल बिल राशि:',
+      coordinatesLabel: 'निर्देशांक (GPS):',
+      accuracyLabel: 'सटीकता:',
+      locationLabel: 'स्थान:',
+      stationLabel: 'मौसम केंद्र:',
+      conditionLabel: 'स्थिति:',
+      tempLabel: 'तापमान:',
+      rainfallLabel: 'वर्षा:',
+      humidityLabel: 'नमी:',
+      productLabel: 'उत्पाद:',
+      manufacturerLabel: 'निर्माता:',
+      activeIngredientLabel: 'सक्रिय घटक:',
+      batchExpiryLabel: 'बैच / समाप्ति तिथि:',
+      fieldLabel: 'फ़ील्ड:',
     },
     sources: {
       farmer_reported: 'किसान द्वारा दर्ज',
       farmer_voice: 'किसान वॉइस रिकॉर्डिंग',
       ai_extracted: 'AI द्वारा निकाला गया',
       ai_estimated: 'AI अनुमानित',
-      receipt_verified: 'रसीद द्वारा सत्यापित',
+      receipt_verified: 'रसीद संलग्न (खरीद प्रमाण)',
       camera_product: 'कैमरा उत्पाद स्कैन',
       gps_captured: 'GPS खेत स्थिति',
       weather_data: 'मौसम केंद्र डेटा',
       soil_report: 'मृदा परीक्षण रिपोर्ट',
       farmer_confirmed: 'किसान द्वारा पुष्ट',
-      verified_document: 'सत्यापित दस्तावेज़',
+      verified_document: 'तृतीय-पक्ष सत्यापित दस्तावेज़',
       demo_data: 'डेमो डेटा',
       unknown: 'अज्ञात स्रोत',
     },
@@ -1636,6 +2255,8 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
     },
     trustIndicators: {
       farmerConfirmed: 'किसान द्वारा पुष्ट',
+      independentlyVerified: 'स्वतंत्र रूप से सत्यापित',
+      unverified: 'स्वतंत्र सत्यापन नहीं',
       pendingConfirmation: 'पुष्टि लंबित',
       draft: 'ड्राफ्ट',
       conflicting: 'विरोधाभासी डेटा',
@@ -1643,6 +2264,30 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       demoIncomplete: 'डेमो (अधूरा)',
       estimated: 'अनुमानित',
       unknown: 'अज्ञात',
+    },
+    evidenceBadges: {
+      farmerReportedSub: 'स्व-रिपोर्टेड',
+      farmerReportedTip: 'किसान द्वारा सीधे दर्ज किया गया रिकॉर्ड (स्वतंत्र तृतीय-पक्ष सत्यापन नहीं)',
+      farmerConfirmedSub: 'किसान द्वारा पुष्ट',
+      farmerConfirmedTip: 'किसान द्वारा समीक्षित और पुष्ट रिकॉर्ड (स्वतंत्र तृतीय-पक्ष सत्यापन नहीं)',
+      awaitingReviewSub: 'समीक्षा लंबित',
+      awaitingReviewTip: 'AI द्वारा निकाला गया — किसान की समीक्षा और पुष्टि लंबित है',
+      receiptAttachedSub: 'रसीद संलग्न',
+      receiptAttachedTip: 'खरीद बिल या तौल पर्ची संलग्न है (यह खेत में उपयोग को स्वतंत्र रूप से सत्यापित नहीं करती)',
+      gpsCapturedSub: 'GPS स्थान',
+      gpsCapturedTip: 'GPS निर्देशांक दर्ज हैं (केवल स्थान से खेत का काम प्रमाणित नहीं होता)',
+      weatherStationSub: 'मौसम केंद्र',
+      weatherStationTip: 'मौसम केंद्र का अवलोकन (यह सिंचाई या खेत कार्य को स्वतंत्र रूप से सत्यापित नहीं करता)',
+      soilLabReportSub: 'लैब रिपोर्ट',
+      soilLabReportTip: 'मृदा प्रयोगशाला रिपोर्ट संलग्न है',
+      voiceCapturedSub: 'वॉइस प्रविष्टि',
+      voiceCapturedTip: 'किसान की आवाज़ से दर्ज विवरण (स्वतंत्र सत्यापन नहीं)',
+      cameraProductSub: 'फोटो साक्ष्य',
+      cameraProductTip: 'दृश्य फोटो संलग्न है (तारीख, मात्रा या उपयोग का स्वतः प्रमाण नहीं)',
+      verifiedDocSub: 'तृतीय-पक्ष दस्तावेज़',
+      verifiedDocTip: 'स्वतंत्र तृतीय-पक्ष सत्यापित दस्तावेज़ द्वारा समर्थित',
+      systemSub: 'सिस्टम',
+      systemTip: 'सिस्टम रिकॉर्ड — स्वतंत्र रूप से सत्यापित नहीं',
     },
     market: {
       title: 'मंडी भाव एवं व्यापारिक तैयारी',
@@ -1681,6 +2326,10 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       simulationBadge: 'केवल सिमुलेशन',
       simulationNote:
         'नोट: यह ऐप ब्राउज़र लोकल स्टोरेज का उपयोग करता है। फेज़ 0.5 में कोई रिमोट क्लाउड सर्वर या मल्टी-डिवाइस सिंक कनेक्ट नहीं है।',
+      offlineBannerTitle: 'ऑफ़लाइन मोड (सिमुलेशन)',
+      offlineBannerDesc: 'दर्ज गतिविधियाँ आपके डिवाइस के स्थानीय स्टोरेज में सुरक्षित हैं।',
+      pendingBannerSuffix: 'गतिविधियाँ स्थानीय रूप से सहेजी गईं · सिंक लंबित',
+      pendingBannerDesc: 'इस संस्करण में रिमोट क्लाउड सिंक सिम्युलेटेड है।',
     },
     resetModal: {
       title: 'ऐप डेटा रीसेट करें?',
@@ -1706,6 +2355,7 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       costLabel: 'लागत (रुपये में, यदि लागू हो)',
       savingLabel: 'सहेजा जा रहा है...',
       dataPreservedNotice: 'आपके द्वारा दर्ज विवरण नीचे सुरक्षित हैं। आप दोबारा सहेजने का प्रयास कर सकते हैं।',
+      titlePlaceholder: 'उदा. बोरवेल से 2 घंटे सिंचाई की',
     },
     preferencesModal: {
       title: 'किसान प्रोफ़ाइल एवं प्राथमिकताएं',
@@ -1795,13 +2445,42 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       sale: 'उपज बिक्री',
       other: 'अन्य कार्य',
     },
+    cropStages: {
+      land_preparation: 'खेत तैयारी',
+      sowing: 'बुवाई',
+      vegetative: 'वानस्पतिक चरण',
+      flowering: 'फूल आने का चरण',
+      grain_filling: 'दाना भरने का चरण',
+      maturity: 'पकने का चरण',
+      harvested: 'कटाई पूर्ण',
+      unknown: 'अज्ञात',
+    },
     units: {
       hours: 'घंटे',
       kg: 'किलोग्राम (किग्रा)',
       bags: 'बोरी / बैग',
       liters: 'लीटर',
+      ml: 'मिलीलीटर (मिली)',
       quintals: 'क्विंटल',
       acres: 'एकड़',
+    },
+    errors: {
+      quotaExceeded: 'डिवाइस स्टोरेज भर गया है। कृपया स्थान खाली करें या पुराने रिकॉर्ड रीसेट कर पुनः प्रयास करें।',
+      storageUnavailable: 'इस सत्र में ब्राउज़र लोकल स्टोरेज उपलब्ध नहीं है।',
+      corruptData: 'दूषित स्थानीय डेटा का पता चला और उसे सुरक्षित रूप से अलग रखा गया।',
+      duplicateRecord: 'ऐसा ही गतिविधि रिकॉर्ड हाल ही में सहेजा गया था।',
+      estimateCannotBeConfirmed: 'अनुमानित रिकॉर्ड की किसान द्वारा वास्तविक खेत तथ्य के रूप में पुष्टि नहीं की जा सकती।',
+      recordNotFound: 'किसान स्टोरेज में रिकॉर्ड नहीं मिला। डेमो रिकॉर्ड की पुष्टि नहीं की जा सकती।',
+      saveActivityFailed: 'गतिविधि रिकॉर्ड सहेजना विफल रहा। कृपया पुनः प्रयास करें।',
+      saveQuickActionFailed: 'त्वरित कार्य रिकॉर्ड सहेजना विफल रहा।',
+      titleRequired: 'कृपया कार्य का शीर्षक दर्ज करें।',
+      profileSaveFailed: 'स्टोरेज सहेजना विफल रहा। आपके प्रोफ़ाइल परिवर्तन केवल इस सत्र तक लागू रहेंगे।',
+      preferencesSaveFailed: 'प्राथमिकताएँ स्थानीय स्टोरेज में सहेजना विफल रहा।',
+      cameraDenied: 'कैमरा अनुमति अस्वीकृत हुई। कृपया विस्तृत फॉर्म या नमूना कैप्चर का उपयोग करें।',
+      clearRecordsFailed: 'किसान गतिविधि रिकॉर्ड साफ़ करना विफल रहा।',
+      clearProfileFailed: 'किसान प्रोफ़ाइल साफ़ करना विफल रहा।',
+      clearPrefsFailed: 'ऐप प्राथमिकताएँ साफ़ करना विफल रहा।',
+      corruptQuarantineNotice: 'दूषित स्थानीय स्टोरेज का पता चला और उसे सुरक्षित रूप से अलग किया गया।',
     },
     common: {
       emptyTitle: 'आपके खेत का रिकॉर्ड यहां शुरू होता है',
@@ -1810,16 +2489,139 @@ export const TRANSLATIONS: Record<AppLanguage, TranslationDictionary> = {
       errorTitle: 'स्टोरेज या लोडिंग समस्या',
       errorDesc: 'आपकी सहेजी गई जानकारी सुरक्षित है। डिवाइस मेमोरी में डेटा बरकरार है।',
       localCacheNote: 'लोकल डिवाइस स्टोरेज में डेटा सुरक्षित रखा गया है।',
+      dismiss: 'खारिज करें',
+      sunlightModeBanner: 'धूप के लिए उच्च-कंट्रास्ट मोड सक्रिय है',
+      editProfilePrefs: 'प्रोफ़ाइल और प्राथमिकताएं संपादित करें',
+      qaPanelTooltip: 'QA और डेमो नियंत्रण खोलें',
+      closeModalAria: 'मोडल बंद करें',
     },
   },
 };
 
 /**
- * Safely retrieves translation dictionary with fallback to English for any missing keys
+ * Recursively merges a target translation object with the English fallback dictionary
+ * so any missing or empty nested key gracefully falls back to English without throwing.
+ */
+export function resolveTranslationWithFallback<T extends Record<string, any>>(
+  target: Partial<T> | undefined,
+  fallback: T
+): T {
+  if (!target || typeof target !== 'object') {
+    return fallback;
+  }
+  const resolved: Record<string, any> = {};
+  for (const key of Object.keys(fallback)) {
+    const fallbackVal = fallback[key];
+    const targetVal = target[key];
+    if (
+      fallbackVal !== null &&
+      typeof fallbackVal === 'object' &&
+      !Array.isArray(fallbackVal)
+    ) {
+      resolved[key] = resolveTranslationWithFallback(
+        typeof targetVal === 'object' && targetVal !== null ? targetVal : undefined,
+        fallbackVal
+      );
+    } else if (typeof targetVal === 'string' && targetVal.trim().length > 0) {
+      resolved[key] = targetVal;
+    } else {
+      resolved[key] = fallbackVal;
+    }
+  }
+  return resolved as T;
+}
+
+const RESOLVED_CACHE: Partial<Record<AppLanguage, TranslationDictionary>> = {};
+
+/**
+ * Safely retrieves translation dictionary with recursive key-level fallback to English
+ * for any missing language or missing/empty nested keys.
  */
 export function getTranslations(lang?: AppLanguage): TranslationDictionary {
-  if (lang && TRANSLATIONS[lang]) {
-    return TRANSLATIONS[lang];
+  if (!lang || !(lang in TRANSLATIONS)) {
+    return TRANSLATIONS.English;
   }
-  return TRANSLATIONS.English;
+  if (lang === 'English') {
+    return TRANSLATIONS.English;
+  }
+  if (!RESOLVED_CACHE[lang]) {
+    RESOLVED_CACHE[lang] = resolveTranslationWithFallback(
+      TRANSLATIONS[lang],
+      TRANSLATIONS.English
+    );
+  }
+  return RESOLVED_CACHE[lang]!;
+}
+
+/**
+ * Recursively collects all leaf key paths (e.g. "timeline.farmerConfirmedCountLabel")
+ * from a translation dictionary object for automated coverage audits.
+ */
+export function collectTranslationKeyPaths(
+  obj: Record<string, any>,
+  prefix = ''
+): string[] {
+  const paths: string[] = [];
+  for (const key of Object.keys(obj)) {
+    const value = obj[key];
+    const fullPath = prefix ? `${prefix}.${key}` : key;
+    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+      paths.push(...collectTranslationKeyPaths(value, fullPath));
+    } else {
+      paths.push(fullPath);
+    }
+  }
+  return paths.sort();
+}
+
+export interface TranslationAuditReport {
+  language: AppLanguage;
+  totalReferenceKeys: number;
+  missingKeys: string[];
+  emptyKeys: string[];
+  extraKeys: string[];
+  coveragePercent: number;
+}
+
+/**
+ * Audits key parity and non-empty values for a language dictionary against English.
+ * NOTE: Validates structural key presence and non-emptiness ONLY; does NOT validate
+ * linguistic accuracy, naturalness, or regional agricultural terminology quality.
+ */
+export function auditTranslationCoverage(lang: AppLanguage): TranslationAuditReport {
+  const refKeys = collectTranslationKeyPaths(TRANSLATIONS.English);
+  const langDict = TRANSLATIONS[lang];
+  const langKeys = collectTranslationKeyPaths(langDict);
+  const langKeySet = new Set(langKeys);
+  const refKeySet = new Set(refKeys);
+
+  const missingKeys: string[] = [];
+  const emptyKeys: string[] = [];
+
+  for (const path of refKeys) {
+    if (!langKeySet.has(path)) {
+      missingKeys.push(path);
+      continue;
+    }
+    const value = path
+      .split('.')
+      .reduce<any>((acc, part) => (acc !== undefined && acc !== null ? acc[part] : undefined), langDict);
+    if (typeof value !== 'string' || value.trim().length === 0) {
+      emptyKeys.push(path);
+    }
+  }
+
+  const extraKeys = langKeys.filter((k) => !refKeySet.has(k));
+  const validCount = refKeys.length - missingKeys.length - emptyKeys.length;
+  const coveragePercent =
+    refKeys.length > 0 ? Math.round((validCount / refKeys.length) * 10000) / 100 : 100;
+
+  return {
+    language: lang,
+    totalReferenceKeys: refKeys.length,
+    missingKeys,
+    emptyKeys,
+    extraKeys,
+    coveragePercent,
+  };
 }

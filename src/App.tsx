@@ -103,10 +103,7 @@ export default function App() {
   useEffect(() => {
     const res = ActivityStorageService.loadAllRecords();
     if (!res.success && res.isCorrupt) {
-      setStorageNotice(
-        res.error ||
-          'Notice: An unreadable storage entry was quarantined to protect farm records. Baseline data is preserved.'
-      );
+      setStorageNotice(t.errors.corruptQuarantineNotice);
     }
   }, []);
 
@@ -121,9 +118,7 @@ export default function App() {
       return { success: true };
     } catch (e: any) {
       const isQuota = e?.name === 'QuotaExceededError' || e?.code === 22 || e?.code === 1014;
-      const errorMsg = isQuota
-        ? 'Storage quota exceeded. Unable to save profile changes. Please free up browser storage.'
-        : 'Failed to save profile to browser storage. Your edits are preserved for retry.';
+      const errorMsg = isQuota ? t.errors.quotaExceeded : t.errors.profileSaveFailed;
       return { success: false, error: errorMsg };
     }
   };
@@ -135,9 +130,7 @@ export default function App() {
       return { success: true };
     } catch (e: any) {
       const isQuota = e?.name === 'QuotaExceededError' || e?.code === 22 || e?.code === 1014;
-      const errorMsg = isQuota
-        ? 'Storage quota exceeded. Unable to save preferences. Please free up browser storage.'
-        : 'Failed to save preferences to browser storage. Your settings are preserved for retry.';
+      const errorMsg = isQuota ? t.errors.quotaExceeded : t.errors.preferencesSaveFailed;
       return { success: false, error: errorMsg };
     }
   };
@@ -202,17 +195,17 @@ export default function App() {
       const errors: string[] = [];
       const resRecords = ActivityStorageService.resetAllFarmerRecords();
       if (!resRecords.success) {
-        errors.push(resRecords.error || 'Failed to clear farmer records from storage');
+        errors.push(t.errors.clearRecordsFailed);
       }
       try {
         localStorage.removeItem(STORAGE_KEY_PROFILE);
       } catch {
-        errors.push('Failed to clear profile from storage');
+        errors.push(t.errors.clearProfileFailed);
       }
       try {
         localStorage.removeItem(STORAGE_KEY_PREFS);
       } catch {
-        errors.push('Failed to clear preferences from storage');
+        errors.push(t.errors.clearPrefsFailed);
       }
 
       if (errors.length > 0) {
@@ -287,7 +280,7 @@ export default function App() {
             onClick={() => setStorageNotice(null)}
             className="underline ml-2 text-[11px] font-bold"
           >
-            Dismiss
+            {t.common.dismiss}
           </button>
         </div>
       )}
@@ -295,13 +288,13 @@ export default function App() {
       {/* Offline Status Warning Banner if in Offline or Pending Sync mode */}
       {syncState === 'offline' && (
         <div className="bg-amber-100 dark:bg-amber-950 text-amber-950 dark:text-amber-200 px-4 py-2 text-xs text-center border-b border-amber-200 dark:border-amber-800 font-medium">
-          Offline Mode Active (Local Memory Only) — Working locally without internet connection. Any newly logged records are preserved in browser memory.
+          {t.sync.offlineBannerTitle} — {t.sync.offlineBannerDesc}
         </div>
       )}
       {syncState === 'pending_sync' && (
         <div className="bg-sky-100 dark:bg-sky-950 text-sky-950 dark:text-sky-200 px-4 py-2 text-xs text-center border-b border-sky-200 dark:border-sky-800 font-medium flex items-center justify-center gap-2">
           <RefreshCw className="w-3.5 h-3.5 animate-spin text-sky-700 dark:text-sky-400" />
-          <span>Local Changes Pending Sync — 1 record saved in browser memory. Tap network indicator to simulate sync state.</span>
+          <span>{t.sync.pendingBannerSuffix} — {t.sync.pendingBannerDesc}</span>
         </div>
       )}
 
@@ -309,7 +302,7 @@ export default function App() {
       {preferences.highContrast && (
         <div className="bg-slate-900 text-white px-4 py-1.5 text-xs text-center font-bold flex items-center justify-center gap-2">
           <Sun className="w-3.5 h-3.5 text-amber-400" />
-          <span>High-Contrast Sunlight Mode Active (Optimized for Outdoor Glare)</span>
+          <span>{t.common.sunlightModeBanner}</span>
         </div>
       )}
 
@@ -319,10 +312,10 @@ export default function App() {
         <div className="mb-4 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400 bg-white/70 dark:bg-slate-900/70 p-2.5 rounded-xl border border-slate-200 dark:border-slate-800">
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-600" />
-            <span className="font-semibold text-slate-700 dark:text-slate-300">Phase 0.5 Profile & Personalization</span>
+            <span className="font-semibold text-slate-700 dark:text-slate-300">{t.preferencesModal.title}</span>
             <span className="hidden sm:inline text-slate-400">·</span>
             <span className="hidden sm:inline text-slate-600 dark:text-slate-400">
-              {profile.preferredName || profile.fullName} ({preferences.interactionMode} mode)
+              {profile.preferredName || profile.fullName}
             </span>
           </div>
 
@@ -333,17 +326,17 @@ export default function App() {
               className="flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-50 dark:bg-emerald-950 hover:bg-emerald-100 dark:hover:bg-emerald-900 text-emerald-900 dark:text-emerald-200 font-semibold border border-emerald-200 dark:border-emerald-800 transition-colors"
             >
               <UserCheck className="w-3 h-3 text-emerald-800 dark:text-emerald-300" />
-              <span>Edit Profile & Preferences</span>
+              <span>{t.common.editProfilePrefs}</span>
             </button>
 
             <button
               type="button"
               onClick={() => setShowQaBar(!showQaBar)}
               className="flex items-center gap-1.5 px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium transition-colors"
-              title="Open QA controls for edge state testing"
+              title={t.common.qaPanelTooltip}
             >
               <SlidersHorizontal className="w-3.5 h-3.5" />
-              <span>QA Panel {showQaBar ? '▲' : '▼'}</span>
+              <span>QA {showQaBar ? '▲' : '▼'}</span>
             </button>
           </div>
         </div>
@@ -504,6 +497,7 @@ export default function App() {
               title={t.common.emptyTitle}
               description={t.common.emptyDesc}
               actionLabel={t.common.emptyAction}
+              language={preferences.appLanguage}
               onAction={() => {
                 setQaViewMode('standard');
                 setIsQuickRecordOpen(true);
@@ -516,6 +510,7 @@ export default function App() {
               title={t.common.errorTitle}
               message={t.common.errorDesc}
               retryLabel={t.actions.tryAgain}
+              language={preferences.appLanguage}
               onRetry={() => setQaViewMode('standard')}
             />
           </div>

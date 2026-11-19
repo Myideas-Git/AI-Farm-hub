@@ -28,7 +28,7 @@ export const BottomNavigation: React.FC<BottomNavigationProps> = ({
   return (
     <nav
       className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-t border-slate-200 dark:border-slate-800"
-      aria-label="Mobile Navigation"
+      aria-label={t.nav.mobileNavigation}
     >
       <div className="grid grid-cols-5 h-16 max-w-md mx-auto items-center">
         {tabs.map((tab) => {

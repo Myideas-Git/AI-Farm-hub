@@ -151,12 +151,17 @@ export class VoiceExtractorService {
         }
       }
 
+      const rawAsrConfidence = event.results[0]?.[0]?.confidence;
       onResult({
         transcript: finalTranscript || interimTranscript,
         isFinal: !!finalTranscript,
+        // Strictly browser Web Speech API ASR transcription confidence (never activity occurrence confidence)
         confidence:
-          typeof event.results[0]?.[0]?.confidence === 'number'
-            ? event.results[0][0].confidence
+          typeof rawAsrConfidence === 'number' &&
+          Number.isFinite(rawAsrConfidence) &&
+          rawAsrConfidence > 0 &&
+          rawAsrConfidence <= 1
+            ? rawAsrConfidence
             : undefined,
       });
     };

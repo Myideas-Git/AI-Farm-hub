@@ -14,6 +14,7 @@ import { MarketBenchmark, CropCycle, Plot } from '../../types/farm';
 import { AppLanguage } from '../../types/profile';
 import { TrustIndicator } from '../common/TrustIndicator';
 import { getTranslations } from '../../i18n/translations';
+import { formatYieldDisplay } from '../../utils/farmSummary';
 
 interface MarketScreenProps {
   benchmarks: MarketBenchmark[];
@@ -97,42 +98,56 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {plots.map((plot) => (
-            <div
-              key={plot.id}
-              className="p-4 bg-slate-50/70 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl space-y-3"
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 flex items-center justify-center font-bold text-xs">
-                    {plot.name.includes('A') ? 'A' : 'B'}
+          {plots.map((plot) => {
+            const plotCycle =
+              cropCycles.find((c) => c.id === plot.currentCropCycleId) ||
+              cropCycles.find((c) => c.plotId === plot.id && c.status === 'active') ||
+              cropCycles.find((c) => c.plotId === plot.id);
+            const stageLabel = t.cropStages[plotCycle?.stage || 'unknown'];
+            const yieldLabel =
+              plotCycle?.actualYieldQuintals !== null && plotCycle?.actualYieldQuintals !== undefined
+                ? formatYieldDisplay(plotCycle.actualYieldQuintals, t)
+                : plotCycle?.expectedHarvestDate
+                ? `${t.myFarm.expectedHarvestLabel}: ${plotCycle.expectedHarvestDate}`
+                : t.myFarm.yieldNotRecorded;
+
+            return (
+              <div
+                key={plot.id}
+                className="p-4 bg-slate-50/70 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl space-y-3"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 flex items-center justify-center font-bold text-xs">
+                      {plot.name.includes('A') ? 'A' : 'B'}
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white">{plot.name}</h3>
+                      <span className="text-[11px] text-slate-500 dark:text-slate-400">
+                        {plot.areaAcres} {t.units.acres} · {plot.cropName}
+                      </span>
+                    </div>
+                  </div>
+                  <TrustIndicator status="demo" language={language} />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-slate-200/60 dark:border-slate-700/60">
+                  <div>
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 block">{t.myFarm.cropStage}</span>
+                    <span className="font-medium text-slate-800 dark:text-slate-200">
+                      {stageLabel}
+                    </span>
                   </div>
                   <div>
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">{plot.name}</h3>
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                      {plot.areaAcres} {language === 'Telugu' ? 'ఎకరాలు' : language === 'Hindi' ? 'एकड़' : 'Acres'} · {plot.cropName}
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 block">{t.myFarm.yieldTargetActual}</span>
+                    <span className="font-medium text-slate-800 dark:text-slate-200">
+                      {yieldLabel}
                     </span>
                   </div>
                 </div>
-                <TrustIndicator status="demo" language={language} />
               </div>
-
-              <div className="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-slate-200/60 dark:border-slate-700/60">
-                <div>
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block">{t.myFarm.cropStage}</span>
-                  <span className="font-medium text-slate-800 dark:text-slate-200">
-                    {t.market.cropStageVegetativeSimulated}
-                  </span>
-                </div>
-                <div>
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block">{t.myFarm.yieldTargetActual}</span>
-                  <span className="font-medium text-slate-800 dark:text-slate-200">
-                    {t.market.estimatedHarvestUnrecorded}
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -171,10 +186,10 @@ export const MarketScreen: React.FC<MarketScreenProps> = ({
                       {getTrendIcon(bm.trend)}
                       <span>
                         {bm.trend === 'up'
-                          ? (language === 'Telugu' ? 'పెరుగుతోంది' : language === 'Hindi' ? 'बढ़ रहा है' : 'Rising')
+                          ? t.market.trendUp
                           : bm.trend === 'down'
-                          ? (language === 'Telugu' ? 'తగ్గుతోంది' : language === 'Hindi' ? 'घट रहा है' : 'Falling')
-                          : (language === 'Telugu' ? 'స్థిరంగా ఉంది' : language === 'Hindi' ? 'स्थिर' : 'Stable')}
+                          ? t.market.trendDown
+                          : t.market.trendStable}
                       </span>
                     </span>
                   </div>

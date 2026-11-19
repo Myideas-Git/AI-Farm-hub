@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Calendar,
   Droplets,
@@ -30,6 +30,14 @@ import { AppLanguage } from '../../types/profile';
 import { TrustIndicator } from '../common/TrustIndicator';
 import { EvidenceBadge } from '../common/EvidenceBadge';
 import { getTranslations } from '../../i18n/translations';
+import {
+  calculateFarmSummary,
+  filterFarmEvents,
+  formatUnitLabel,
+  formatYieldDisplay,
+  isEstimatedEvent,
+  sanitizeEventConfidence,
+} from '../../utils/farmSummary';
 
 interface FarmTimelineProps {
   events: FarmEvent[];
@@ -61,7 +69,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showCropMemorySummary, setShowCropMemorySummary] = useState<boolean>(true);
 
-  const [activeModalEvent, setActiveModalEvent] = useState<FarmEvent | null>(null);
+  const [activeModalEventId, setActiveModalEventId] = useState<string | null>(null);
   const [editingEvent, setEditingEvent] = useState<FarmEvent | null>(null);
   const [eventToDelete, setEventToDelete] = useState<FarmEvent | null>(null);
   const [editTitle, setEditTitle] = useState<string>('');
@@ -71,97 +79,62 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
   const [editUnit, setEditUnit] = useState<string>('');
   const [editNotes, setEditNotes] = useState<string>('');
 
-  // Chronologically sort events (newest or chronological order)
-  const sortedEvents = useMemo(() => {
-    return [...events].sort((a, b) => {
-      const dateA = a.activityDate ? new Date(a.activityDate).getTime() : 0;
-      const dateB = b.activityDate ? new Date(b.activityDate).getTime() : 0;
-      return dateB - dateA;
-    });
-  }, [events]);
+  // Keep selectedPlotId aligned whenever parent changes defaultPlotId (e.g. switching plots in MyFarmScreen)
+  useEffect(() => {
+    setSelectedPlotId(defaultPlotId);
+  }, [defaultPlotId]);
 
-  // Filter events
+  const activeModalEvent = useMemo(
+    () => (activeModalEventId ? events.find((e) => e.eventId === activeModalEventId) || null : null),
+    [events, activeModalEventId]
+  );
+
+  // Events matching plot, event type, source, and search before category split so category tab counts always agree
+  const categoryScopedEvents = useMemo(() => {
+    return filterFarmEvents(events, {
+      category: 'all',
+      plotId: selectedPlotId,
+      eventType: selectedEventType,
+      source: selectedSourceFilter,
+      searchQuery,
+    });
+  }, [events, selectedPlotId, selectedEventType, selectedSourceFilter, searchQuery]);
+
+  // Filter and sort events via reusable pure production helper (never mutates input)
   const filteredEvents = useMemo(() => {
-    return sortedEvents.filter((evt) => {
-      if (selectedFilterCategory === 'farmer' && evt.isDemo) return false;
-      if (selectedFilterCategory === 'demo' && !evt.isDemo) return false;
-
-      if (selectedPlotId !== 'all') {
-        if (selectedPlotId === 'unassigned' && evt.plotId !== null) return false;
-        if (selectedPlotId !== 'unassigned' && evt.plotId !== selectedPlotId) return false;
-      }
-
-      if (selectedEventType !== 'all') {
-        if (selectedEventType === 'spray' && evt.eventType !== 'spray') return false;
-        if (selectedEventType === 'pest_scouting' && evt.eventType !== 'pest_scouting' && evt.eventType !== 'observation') return false;
-        if (selectedEventType !== 'spray' && selectedEventType !== 'pest_scouting' && evt.eventType !== selectedEventType) return false;
-      }
-
-      if (selectedSourceFilter !== 'all') {
-        if (selectedSourceFilter === 'ai_estimated' && (evt.source !== 'ai_estimated' && !evt.isEstimate)) return false;
-        if (selectedSourceFilter !== 'ai_estimated' && evt.source !== selectedSourceFilter) return false;
-      }
-
-      if (searchQuery.trim()) {
-        const query = searchQuery.toLowerCase();
-        const matchesTitle = evt.title.toLowerCase().includes(query);
-        const matchesInput = evt.inputName?.toLowerCase().includes(query) || evt.fertilizerName?.toLowerCase().includes(query) || evt.productName?.toLowerCase().includes(query);
-        const matchesDesc = evt.description?.toLowerCase().includes(query);
-        const matchesPlot = evt.plotName.toLowerCase().includes(query);
-        if (!matchesTitle && !matchesInput && !matchesDesc && !matchesPlot) return false;
-      }
-
-      return true;
+    return filterFarmEvents(events, {
+      category: selectedFilterCategory,
+      plotId: selectedPlotId,
+      eventType: selectedEventType,
+      source: selectedSourceFilter,
+      searchQuery,
     });
-  }, [sortedEvents, selectedFilterCategory, selectedPlotId, selectedEventType, selectedSourceFilter, searchQuery]);
+  }, [events, selectedFilterCategory, selectedPlotId, selectedEventType, selectedSourceFilter, searchQuery]);
 
-  // Compute Crop Cycle Digital Memory for the active filter
-  const cropCycleMemory = useMemo(() => {
-    const memoryEvents = selectedPlotId === 'all'
-      ? filteredEvents
-      : events.filter((e) => e.plotId === selectedPlotId);
+  // Determine if specific search or provenance filters are active
+  const isFilterActive =
+    selectedFilterCategory !== 'all' ||
+    selectedEventType !== 'all' ||
+    selectedSourceFilter !== 'all' ||
+    Boolean(searchQuery.trim());
 
-    const totalEvents = memoryEvents.length;
-    const confirmedCount = memoryEvents.filter((e) => e.status === 'farmer_confirmed').length;
-    const pendingCount = memoryEvents.filter((e) => e.status === 'pending_confirmation').length;
-    const estimatedCount = memoryEvents.filter((e) => e.isEstimate || e.source === 'ai_estimated' || e.status === 'estimated').length;
+  // Farm summary always calculated directly from filteredEvents so summary, filters, search, and selected plot strictly agree
+  // Strict rule: Demo data never contaminates real expenditure, real confirmed counts, real evidence, or real estimates
+  const farmSummary = useMemo(() => {
+    return calculateFarmSummary(filteredEvents);
+  }, [filteredEvents]);
 
-    // Real measured/incurred costs (ignoring unverified estimates)
-    const totalCost = memoryEvents.reduce((acc, evt) => {
-      if (!evt.isEstimate && evt.cost && typeof evt.cost === 'number') {
-        return acc + evt.cost;
-      }
-      return acc;
-    }, 0);
-
-    // Inputs applied
-    const inputsList = memoryEvents
-      .filter((e) => !e.isEstimate && (e.inputName || e.fertilizerName || e.productName))
-      .map((e) => {
-        const name = e.inputName || e.fertilizerName || e.productName || '';
-        const qty = e.quantity ? `${e.quantity} ${e.unit || ''}` : '';
-        return { name, qty, type: e.eventType, date: e.activityDate };
-      });
-
-    // Evidence attachments
-    const evidenceTally = {
-      receipts: memoryEvents.filter((e) => e.evidence?.type === 'receipt' || e.source === 'receipt_verified').length,
-      photos: memoryEvents.filter((e) => e.evidence?.type === 'photo' || e.source === 'camera_product').length,
-      gps: memoryEvents.filter((e) => e.evidence?.type === 'gps' || e.source === 'gps_captured').length,
-      weather: memoryEvents.filter((e) => e.evidence?.type === 'weather' || e.source === 'weather_data').length,
-      soil: memoryEvents.filter((e) => e.evidence?.type === 'lab_report' || e.source === 'soil_report').length,
-    };
-
-    return {
-      totalEvents,
-      confirmedCount,
-      pendingCount,
-      estimatedCount,
-      totalCost,
-      inputsList,
-      evidenceTally,
-    };
-  }, [events, filteredEvents, selectedPlotId]);
+  const showingDemoSummary =
+    selectedFilterCategory === 'demo' || (!farmSummary.hasRealData && farmSummary.hasDemoData);
+  const activeEvidenceTally = showingDemoSummary
+    ? farmSummary.demoEvidenceTally
+    : farmSummary.realEvidenceTally;
+  const activeEstimatedCount = showingDemoSummary
+    ? farmSummary.demoEstimatedEventsCount
+    : farmSummary.realEstimatedEventsCount;
+  const activeEstimatedCost = showingDemoSummary
+    ? farmSummary.demoEstimatedCostTotal
+    : farmSummary.realEstimatedCostTotal;
 
   const getActivityIcon = (type: FarmEventType) => {
     switch (type) {
@@ -201,8 +174,21 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
       case 'harvest':
         return t.timeline.activityHarvest;
       default:
-        return type.replace(/_/g, ' ');
+        return t.eventTypes[type] || type.replace(/_/g, ' ');
     }
+  };
+
+  const formatEventQuantity = (evt: FarmEvent): string => {
+    if (evt.quantity === null || evt.quantity === undefined) {
+      return t.timeline.unknownNotRecorded;
+    }
+    const prefix = evt.isEstimate || evt.source === 'ai_estimated' || evt.status === 'estimated' ? '~' : '';
+    const normUnit = (evt.unit || '').trim().toLowerCase();
+    if (evt.eventType === 'harvest' && (normUnit === 'quintal' || normUnit === 'quintals' || normUnit === 'qtl')) {
+      return `${prefix}${formatYieldDisplay(evt.quantity, t)}`;
+    }
+    const unitLabel = formatUnitLabel(evt.unit, t);
+    return `${prefix}${evt.quantity}${unitLabel ? ` ${unitLabel}` : ''}`;
   };
 
   const getEventBg = (type: FarmEventType, isEstimate?: boolean) => {
@@ -231,7 +217,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
   };
 
   const formatDateDisplay = (dateStr: string | null) => {
-    if (!dateStr) return 'Date: Unknown';
+    if (!dateStr) return t.home.unknownDate;
     try {
       const d = new Date(dateStr);
       return d.toLocaleDateString(language === 'Telugu' ? 'te-IN' : language === 'Hindi' ? 'hi-IN' : 'en-IN', {
@@ -258,7 +244,9 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
     e.preventDefault();
     if (!editingEvent || !onEditEvent) return;
 
-    const parsedQty = editQuantity ? parseFloat(editQuantity) : null;
+    const trimmedQty = editQuantity.trim();
+    const numericQty = trimmedQty !== '' ? Number(trimmedQty) : null;
+    const parsedQty = numericQty !== null && Number.isFinite(numericQty) ? numericQty : null;
     const targetPlot = plots.find((p) => p.id === editPlotId);
 
     const updated: FarmEvent = {
@@ -275,9 +263,6 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
 
     onEditEvent(updated);
     setEditingEvent(null);
-    if (activeModalEvent?.eventId === editingEvent.eventId) {
-      setActiveModalEvent(updated);
-    }
   };
 
   return (
@@ -289,13 +274,13 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-800 dark:text-emerald-400">
-                  {t.timeline.cropMemoryTitle}
+                  {isFilterActive ? t.timeline.filteredActivitiesCount : t.timeline.cropMemoryTitle}
                 </span>
                 <span className="text-slate-300 dark:text-slate-600">·</span>
                 <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                   {selectedPlotId === 'all'
                     ? t.timeline.allPlots
-                    : plots.find((p) => p.id === selectedPlotId)?.name || 'Selected Plot'}
+                    : plots.find((p) => p.id === selectedPlotId)?.name || t.timeline.selectedPlotLabel}
                 </span>
               </div>
               <h3 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white mt-0.5">
@@ -305,29 +290,56 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
 
             <div className="flex items-center gap-2">
               <span className="px-3 py-1 bg-white dark:bg-slate-900 rounded-lg border border-emerald-200 dark:border-emerald-800 text-xs font-bold text-emerald-900 dark:text-emerald-300 tabular-nums">
-                {cropCycleMemory.totalEvents} {t.timeline.activitiesSoFar}
+                {showingDemoSummary
+                  ? `${farmSummary.demoTotalEvents} ${t.timeline.demoBadge}`
+                  : `${farmSummary.realTotalEvents} ${t.timeline.activitiesSoFar}`}
               </span>
               <button
                 type="button"
                 onClick={() => setShowCropMemorySummary(false)}
                 className="text-[11px] text-slate-400 hover:text-slate-600 p-1"
-                title="Hide summary"
+                title={t.timeline.hideSummaryTooltip}
+                aria-label={t.timeline.hideSummaryTooltip}
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
           </div>
 
+          {/* Explicit Demo Data Notice when in demo demonstration mode */}
+          {showingDemoSummary && farmSummary.hasDemoData && (
+            <div className="mt-3 px-3 py-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/50 border border-sky-200 dark:border-sky-800 text-[11px] text-sky-800 dark:text-sky-300 flex items-center justify-between">
+              <span className="font-semibold">{t.timeline.demoSyntheticNotice}</span>
+              <span className="font-bold px-1.5 py-0.5 rounded bg-sky-100 dark:bg-sky-900 text-sky-900 dark:text-sky-200 uppercase text-[10px]">
+                {t.timeline.demoBadge}
+              </span>
+            </div>
+          )}
+
+          {/* Explicit boundary disclosure when both real farmer records and demo records are present */}
+          {!showingDemoSummary && farmSummary.hasRealData && farmSummary.hasDemoData && (
+            <div className="mt-3 px-3 py-1.5 rounded-lg bg-emerald-100/60 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 text-[11px] text-emerald-900 dark:text-emerald-300 flex items-center justify-between">
+              <span className="font-medium">
+                {t.timeline.realFarmerSpend} — {farmSummary.demoTotalEvents} {t.timeline.demoBadge} ({t.timeline.excludedFromRealTotals})
+              </span>
+            </div>
+          )}
+
           {/* Quick Metrics Bar */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-3 text-xs">
-            {/* Total Invested */}
+            {/* Total Invested / Expenditure */}
             <div className="p-2.5 bg-white dark:bg-slate-900/80 rounded-xl border border-emerald-100 dark:border-emerald-900">
               <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-medium block">
-                {t.timeline.totalInvestedCost}
+                {showingDemoSummary ? t.timeline.demoSyntheticSpend : t.timeline.realFarmerSpend}
               </span>
-              <span className="text-sm font-bold text-slate-900 dark:text-white tabular-nums">
-                ₹{cropCycleMemory.totalCost.toLocaleString('en-IN')}
+              <span className="text-sm font-bold text-slate-900 dark:text-white tabular-nums block">
+                ₹{showingDemoSummary ? farmSummary.demoExpenditure.toLocaleString('en-IN') : farmSummary.realExpenditure.toLocaleString('en-IN')}
               </span>
+              {!showingDemoSummary && farmSummary.hasDemoData && (
+                <span className="text-[10px] text-slate-400 block mt-0.5">
+                  {t.timeline.demoRefLabel} ₹{farmSummary.demoExpenditure.toLocaleString('en-IN')}
+                </span>
+              )}
             </div>
 
             {/* Confirmed Operations */}
@@ -335,36 +347,48 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
               <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-medium block">
                 {t.timeline.confirmationStatus}
               </span>
-              <span className="text-sm font-bold text-emerald-800 dark:text-emerald-300 tabular-nums">
-                {cropCycleMemory.confirmedCount} Confirmed
+              <span className="text-sm font-bold text-emerald-800 dark:text-emerald-300 tabular-nums block">
+                {showingDemoSummary
+                  ? `${farmSummary.demoConfirmedCount} ${t.timeline.demoConfirmedCountLabel}`
+                  : `${farmSummary.realConfirmedCount} ${t.timeline.farmerConfirmedCountLabel}`}
               </span>
+              {!showingDemoSummary && (
+                <span className="text-[10px] text-slate-400 block mt-0.5">
+                  {farmSummary.realPendingCount} {t.timeline.pendingReviewCountLabel}
+                </span>
+              )}
             </div>
 
             {/* Evidence Tally */}
             <div className="p-2.5 bg-white dark:bg-slate-900/80 rounded-xl border border-emerald-100 dark:border-emerald-900">
               <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-medium block">
-                {t.timeline.evidenceAttached}
+                {t.timeline.evidenceAttached}{showingDemoSummary ? ` (${t.timeline.demoBadge})` : ''}
               </span>
               <div className="flex items-center gap-1.5 mt-0.5 text-slate-700 dark:text-slate-300 font-semibold">
-                <span title="Receipts"><Receipt className="w-3.5 h-3.5 text-emerald-600" /></span>
-                <span>{cropCycleMemory.evidenceTally.receipts}</span>
+                <span title={t.timeline.receiptsTooltip}><Receipt className="w-3.5 h-3.5 text-emerald-600" /></span>
+                <span>{activeEvidenceTally.receipts}</span>
                 <span className="text-slate-300">·</span>
-                <span title="Photos"><Camera className="w-3.5 h-3.5 text-sky-600" /></span>
-                <span>{cropCycleMemory.evidenceTally.photos}</span>
+                <span title={t.timeline.photosTooltip}><Camera className="w-3.5 h-3.5 text-sky-600" /></span>
+                <span>{activeEvidenceTally.photos}</span>
                 <span className="text-slate-300">·</span>
-                <span title="GPS"><MapPin className="w-3.5 h-3.5 text-teal-600" /></span>
-                <span>{cropCycleMemory.evidenceTally.gps}</span>
+                <span title={t.timeline.gpsTooltip}><MapPin className="w-3.5 h-3.5 text-teal-600" /></span>
+                <span>{activeEvidenceTally.gps}</span>
               </div>
             </div>
 
             {/* Estimates Safeguard */}
             <div className="p-2.5 bg-white dark:bg-slate-900/80 rounded-xl border border-emerald-100 dark:border-emerald-900">
               <span className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-medium block">
-                AI Estimates Flagged
+                {t.timeline.aiEstimatesFlagged}{showingDemoSummary ? ` (${t.timeline.demoBadge})` : ''}
               </span>
-              <span className="text-sm font-semibold text-amber-700 dark:text-amber-400 tabular-nums">
-                {cropCycleMemory.estimatedCount} {cropCycleMemory.estimatedCount > 0 ? '(Not facts)' : ''}
+              <span className="text-sm font-semibold text-amber-700 dark:text-amber-400 tabular-nums block">
+                {activeEstimatedCount} {activeEstimatedCount > 0 ? t.timeline.notFactsTag : ''}
               </span>
+              {activeEstimatedCost > 0 && (
+                <span className="text-[10px] text-amber-600 dark:text-amber-400 block mt-0.5">
+                  ₹{activeEstimatedCost.toLocaleString('en-IN')} {t.timeline.projectedLabel}
+                </span>
+              )}
             </div>
           </div>
         </div>
@@ -384,7 +408,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
               }`}
             >
-              {t.timeline.filterAll} ({events.length})
+              {t.timeline.filterAll} ({categoryScopedEvents.length})
             </button>
             <button
               type="button"
@@ -395,7 +419,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
               }`}
             >
-              {t.timeline.filterFarmer} ({events.filter((e) => !e.isDemo).length})
+              {t.timeline.filterFarmer} ({categoryScopedEvents.filter((e) => !e.isDemo).length})
             </button>
             <button
               type="button"
@@ -406,7 +430,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900'
               }`}
             >
-              {t.timeline.filterDemo} ({events.filter((e) => e.isDemo).length})
+              {t.timeline.filterDemo} ({categoryScopedEvents.filter((e) => e.isDemo).length})
             </button>
           </div>
 
@@ -415,7 +439,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
             <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
             <input
               type="text"
-              placeholder="Search input, activity, date..."
+              placeholder={t.timeline.searchPlaceholder}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-800 dark:text-slate-200 placeholder:text-slate-400 focus:outline-hidden"
@@ -425,6 +449,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
                 type="button"
                 onClick={() => setSearchQuery('')}
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                aria-label={t.actions.close}
               >
                 <X className="w-3 h-3" />
               </button>
@@ -439,7 +464,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
             value={selectedPlotId}
             onChange={(e) => setSelectedPlotId(e.target.value)}
             className="px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-slate-700 dark:text-slate-200 focus:outline-hidden"
-            aria-label="Filter by Plot"
+            aria-label={t.timeline.filterByPlotAria}
           >
             <option value="all">{t.timeline.allPlots}</option>
             {plots.map((p) => (
@@ -455,7 +480,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
             value={selectedEventType}
             onChange={(e) => setSelectedEventType(e.target.value)}
             className="px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-slate-700 dark:text-slate-200 focus:outline-hidden"
-            aria-label="Filter by Event Type"
+            aria-label={t.timeline.filterByTypeAria}
           >
             <option value="all">{t.timeline.allTypes}</option>
             <option value="sowing">{t.timeline.activitySowing}</option>
@@ -464,8 +489,8 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
             <option value="pest_scouting">{t.timeline.activityPest}</option>
             <option value="spray">{t.timeline.activityPesticide}</option>
             <option value="harvest">{t.timeline.activityHarvest}</option>
-            <option value="land_prep">Land Preparation</option>
-            <option value="weeding">Weeding</option>
+            <option value="land_prep">{t.eventTypes.land_prep}</option>
+            <option value="weeding">{t.eventTypes.weeding}</option>
           </select>
 
           {/* Evidence Model Filter */}
@@ -473,13 +498,13 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
             value={selectedSourceFilter}
             onChange={(e) => setSelectedSourceFilter(e.target.value)}
             className="px-2.5 py-1.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md text-slate-700 dark:text-slate-200 focus:outline-hidden"
-            aria-label="Filter by Evidence Model"
+            aria-label={t.timeline.filterByEvidenceAria}
           >
-            <option value="all">All Evidence Sources</option>
+            <option value="all">{t.timeline.allEvidenceSources}</option>
             <option value="farmer_reported">{t.sources.farmer_reported}</option>
             <option value="farmer_confirmed">{t.sources.farmer_confirmed}</option>
             <option value="ai_extracted">{t.sources.ai_extracted}</option>
-            <option value="ai_estimated">{t.sources.ai_estimated} (Estimates)</option>
+            <option value="ai_estimated">{t.sources.ai_estimated} {t.timeline.estimatesTag}</option>
             <option value="receipt_verified">{t.sources.receipt_verified}</option>
             <option value="gps_captured">{t.sources.gps_captured}</option>
             <option value="weather_data">{t.sources.weather_data}</option>
@@ -492,7 +517,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
               onClick={() => setShowCropMemorySummary(true)}
               className="ml-auto text-emerald-800 dark:text-emerald-400 font-semibold hover:underline"
             >
-              Show Memory Summary
+              {t.timeline.showMemorySummary}
             </button>
           )}
         </div>
@@ -502,12 +527,12 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
       {filteredEvents.length === 0 ? (
         <div className="p-8 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-center">
           <p className="text-sm text-slate-500 dark:text-slate-400 mb-3">
-            No activity records match your filter criteria.
+            {t.timeline.noMatchingRecords}
           </p>
           <button
             type="button"
             onClick={() => {
-              setSelectedPlotId('all');
+              setSelectedPlotId(defaultPlotId);
               setSelectedEventType('all');
               setSelectedSourceFilter('all');
               setSelectedFilterCategory('all');
@@ -515,7 +540,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
             }}
             className="text-xs text-emerald-800 dark:text-emerald-400 font-semibold hover:underline"
           >
-            Reset filter criteria
+            {t.timeline.resetFilterCriteria}
           </button>
         </div>
       ) : (
@@ -585,22 +610,22 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
 
                     {/* Title & Clickable details */}
                     <h4
-                      onClick={() => setActiveModalEvent(evt)}
+                      onClick={() => setActiveModalEventId(evt.eventId)}
                       className="text-sm sm:text-base font-bold text-slate-900 dark:text-white group-hover:text-emerald-800 dark:group-hover:text-emerald-400 transition-colors flex items-center gap-1.5 cursor-pointer"
                     >
                       <span>{evt.title}</span>
                       <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
                     </h4>
 
-                    {/* Primary Input Callout (Example: Urea — 40 kg, Drip irrigation, Product X — 2 acres) */}
+                    {/* Primary Input Callout */}
                     {displayInput && (
                       <div className="flex items-center gap-2 text-xs">
                         <span className="font-semibold text-slate-700 dark:text-slate-300">
-                          Input: <span className="text-emerald-800 dark:text-emerald-400 font-bold">{displayInput}</span>
+                          {t.timeline.inputLabel} <span className="text-emerald-800 dark:text-emerald-400 font-bold">{displayInput}</span>
                         </span>
                         {evt.quantity !== null && evt.quantity !== undefined && (
                           <span className="text-slate-500 dark:text-slate-400">
-                            — {evt.quantity} {evt.unit || ''}
+                            — {formatEventQuantity(evt)}
                           </span>
                         )}
                         {evt.areaCoveredAcres !== null && evt.areaCoveredAcres !== undefined && (
@@ -635,7 +660,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
                       {/* Quantity display */}
                       {evt.quantity !== null && evt.quantity !== undefined ? (
                         <div className="text-sm font-bold text-slate-900 dark:text-slate-100 tabular-nums">
-                          {isEstimate ? `~${evt.quantity}` : evt.quantity} {evt.unit || ''}
+                          {formatEventQuantity(evt)}
                         </div>
                       ) : (
                         <div className="text-xs text-slate-400 italic">{t.timeline.unknownNotRecorded}</div>
@@ -649,8 +674,8 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
                       ) : null}
                     </div>
 
-                    {/* Pending Confirmation Action Button */}
-                    {evt.status === 'pending_confirmation' && onConfirmEvent && (
+                    {/* Pending Confirmation Action Button (real, non-estimated records only) */}
+                    {!evt.isDemo && !isEstimate && evt.status === 'pending_confirmation' && onConfirmEvent && (
                       <button
                         type="button"
                         onClick={(e) => {
@@ -682,18 +707,30 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
                     {/* Confirmation Status */}
                     <TrustIndicator status={evt.status} size="sm" language={language} />
 
-                    {/* Confidence Score if supported */}
-                    {evt.confidence !== undefined && (
-                      <span className="text-[10px] text-slate-500 font-mono px-1.5 py-0.5 rounded bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                        {Math.round(evt.confidence * 100)}% Conf
-                      </span>
-                    )}
+                    {/* Confidence Score only when backed by a documented source */}
+                    {(() => {
+                      const validConf = sanitizeEventConfidence(evt);
+                      if (validConf.confidence === undefined || !validConf.confidenceSource) {
+                        return null;
+                      }
+                      const sourceLabel =
+                        validConf.confidenceSource === 'web_speech_api_asr'
+                          ? t.timeline.asrConfidenceLabel
+                          : validConf.confidenceSource === 'sensor_calibration'
+                          ? t.timeline.sensorConfidenceLabel
+                          : t.timeline.syntheticDemoConfidenceLabel;
+                      return (
+                        <span className="text-[10px] text-slate-500 font-mono px-1.5 py-0.5 rounded bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                          {Math.round(validConf.confidence * 100)}% · {sourceLabel}
+                        </span>
+                      );
+                    })()}
                   </div>
 
                   <div className="flex items-center gap-2">
                     <button
                       type="button"
-                      onClick={() => setActiveModalEvent(evt)}
+                      onClick={() => setActiveModalEventId(evt.eventId)}
                       className="text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200 text-[11px] font-medium"
                     >
                       {t.timeline.viewDetails}
@@ -808,7 +845,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
                     step="any"
                     value={editQuantity}
                     onChange={(e) => setEditQuantity(e.target.value)}
-                    placeholder="e.g. 40"
+                    placeholder={t.timeline.quantityPlaceholder}
                     className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100"
                   />
                 </div>
@@ -821,7 +858,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
                     type="text"
                     value={editUnit}
                     onChange={(e) => setEditUnit(e.target.value)}
-                    placeholder="kg, hours, bags..."
+                    placeholder={t.timeline.unitPlaceholder}
                     className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-900 dark:text-slate-100"
                   />
                 </div>
@@ -929,9 +966,9 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
               </div>
               <button
                 type="button"
-                onClick={() => setActiveModalEvent(null)}
+                onClick={() => setActiveModalEventId(null)}
                 className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
-                aria-label="Close details"
+                aria-label={t.actions.close}
               >
                 <X className="w-5 h-5" />
               </button>
@@ -975,7 +1012,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
             {activeModalEvent.rawTranscript && (
               <div className="p-3 bg-sky-50 dark:bg-sky-950/40 rounded-lg text-xs mb-4 border border-sky-200 dark:border-sky-800">
                 <span className="font-semibold text-sky-900 dark:text-sky-200 block text-[11px] mb-1">
-                  Captured Voice Transcript:
+                  {t.timeline.capturedVoiceTranscript}
                 </span>
                 <p className="italic text-slate-700 dark:text-slate-300">"{activeModalEvent.rawTranscript}"</p>
               </div>
@@ -985,7 +1022,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
             <div className="grid grid-cols-2 gap-2.5 text-xs mb-4">
               {/* Field 1: Activity */}
               <div className="p-2.5 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg">
-                <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Activity</span>
+                <span className="text-slate-500 dark:text-slate-400 block text-[11px]">{t.timeline.activityFieldLabel}</span>
                 <span className="font-semibold text-slate-900 dark:text-slate-100 flex items-center gap-1 mt-0.5">
                   {getActivityIcon(activeModalEvent.eventType)}
                   <span>{getActivityBadgeLabel(activeModalEvent.eventType)}</span>
@@ -994,9 +1031,9 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
 
               {/* Field 2: Input */}
               <div className="p-2.5 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg">
-                <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Input Applied</span>
+                <span className="text-slate-500 dark:text-slate-400 block text-[11px]">{t.timeline.inputAppliedLabel}</span>
                 <span className="font-semibold text-emerald-800 dark:text-emerald-400 block mt-0.5">
-                  {activeModalEvent.inputName || activeModalEvent.fertilizerName || activeModalEvent.productName || 'None recorded'}
+                  {activeModalEvent.inputName || activeModalEvent.fertilizerName || activeModalEvent.productName || t.timeline.noneRecorded}
                 </span>
               </div>
 
@@ -1004,9 +1041,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
               <div className="p-2.5 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg">
                 <span className="text-slate-500 dark:text-slate-400 block text-[11px]">{t.timeline.quantity}</span>
                 <span className="font-semibold text-slate-900 dark:text-slate-100 tabular-nums block mt-0.5">
-                  {activeModalEvent.quantity !== null && activeModalEvent.quantity !== undefined
-                    ? `${activeModalEvent.isEstimate ? '~' : ''}${activeModalEvent.quantity} ${activeModalEvent.unit || ''}`
-                    : t.timeline.unknownNotRecorded}
+                  {formatEventQuantity(activeModalEvent)}
                 </span>
               </div>
 
@@ -1032,11 +1067,21 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
 
               {/* Field 6: Confidence */}
               <div className="p-2.5 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg">
-                <span className="text-slate-500 dark:text-slate-400 block text-[11px]">Confidence</span>
+                <span className="text-slate-500 dark:text-slate-400 block text-[11px]">{t.timeline.confidenceLabel}</span>
                 <span className="font-semibold text-slate-900 dark:text-slate-100 block mt-0.5">
-                  {activeModalEvent.confidence !== undefined
-                    ? `${Math.round(activeModalEvent.confidence * 100)}% (${activeModalEvent.confidence >= 0.8 ? 'HIGH' : activeModalEvent.confidence >= 0.5 ? 'MEDIUM' : 'LOW'})`
-                    : 'Standard / Field Logged'}
+                  {(() => {
+                    const validConf = sanitizeEventConfidence(activeModalEvent);
+                    if (validConf.confidence === undefined || !validConf.confidenceSource) {
+                      return t.timeline.notApplicableConfidence;
+                    }
+                    const sourceLabel =
+                      validConf.confidenceSource === 'web_speech_api_asr'
+                        ? t.timeline.asrConfidenceLabel
+                        : validConf.confidenceSource === 'sensor_calibration'
+                        ? t.timeline.sensorConfidenceLabel
+                        : t.timeline.syntheticDemoConfidenceLabel;
+                    return `${Math.round(validConf.confidence * 100)}% (${sourceLabel})`;
+                  })()}
                 </span>
               </div>
 
@@ -1060,6 +1105,13 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
                   <TrustIndicator status={activeModalEvent.status} size="sm" language={language} />
                 </div>
               </div>
+
+              <div className="p-2.5 bg-white dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 rounded-lg col-span-2">
+                <span className="text-slate-500 dark:text-slate-400 block text-[11px]">{t.timeline.verificationStatus}</span>
+                <div className="mt-0.5">
+                  <TrustIndicator status={activeModalEvent.verificationStatus} size="sm" language={language} />
+                </div>
+              </div>
             </div>
 
             {/* Evidence Attachments Panel */}
@@ -1078,11 +1130,11 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
                     ) : (
                       <FileText className="w-4 h-4 text-slate-600" />
                     )}
-                    <span>Attached Evidence: {activeModalEvent.evidence.label || activeModalEvent.evidence.type}</span>
+                    <span>{t.timeline.attachedEvidenceLabel} {activeModalEvent.evidence.label || activeModalEvent.evidence.type}</span>
                   </div>
                   {activeModalEvent.evidence.isDocumentVerified && (
                     <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">
-                      Document Verified
+                      {t.timeline.documentVerifiedBadge}
                     </span>
                   )}
                 </div>
@@ -1091,21 +1143,21 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
                 {activeModalEvent.evidence.receiptDetails && (
                   <div className="grid grid-cols-2 gap-2 p-2.5 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px]">
                     <div>
-                      <span className="text-slate-400 block">Vendor / Station:</span>
-                      <span className="font-semibold">{activeModalEvent.evidence.receiptDetails.seller || 'Recorded'}</span>
+                      <span className="text-slate-400 block">{t.timeline.vendorStationLabel}</span>
+                      <span className="font-semibold">{activeModalEvent.evidence.receiptDetails.seller || t.timeline.unknownNotRecorded}</span>
                     </div>
                     <div>
-                      <span className="text-slate-400 block">Date of Invoice:</span>
-                      <span className="font-semibold">{activeModalEvent.evidence.receiptDetails.date || 'Recorded'}</span>
+                      <span className="text-slate-400 block">{t.timeline.invoiceDateLabel}</span>
+                      <span className="font-semibold">{activeModalEvent.evidence.receiptDetails.date || t.timeline.unknownNotRecorded}</span>
                     </div>
                     <div>
-                      <span className="text-slate-400 block">Item / Quantity:</span>
+                      <span className="text-slate-400 block">{t.timeline.itemQuantityLabel}</span>
                       <span className="font-semibold">
-                        {activeModalEvent.evidence.receiptDetails.product} ({activeModalEvent.evidence.receiptDetails.quantity} {activeModalEvent.evidence.receiptDetails.unit})
+                        {activeModalEvent.evidence.receiptDetails.product} ({activeModalEvent.evidence.receiptDetails.quantity} {formatUnitLabel(activeModalEvent.evidence.receiptDetails.unit, t)})
                       </span>
                     </div>
                     <div>
-                      <span className="text-slate-400 block">Billed Total:</span>
+                      <span className="text-slate-400 block">{t.timeline.billedTotalLabel}</span>
                       <span className="font-bold text-emerald-700">₹{activeModalEvent.evidence.receiptDetails.amount?.toLocaleString('en-IN')}</span>
                     </div>
                   </div>
@@ -1115,10 +1167,10 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
                 {activeModalEvent.evidence.gpsCoords && (
                   <div className="p-2.5 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px] space-y-1">
                     <div className="font-semibold text-teal-800 dark:text-teal-300">
-                      Coordinates: {activeModalEvent.evidence.gpsCoords.latitude}° N, {activeModalEvent.evidence.gpsCoords.longitude}° E
+                      {t.timeline.coordinatesLabel} {activeModalEvent.evidence.gpsCoords.latitude}° N, {activeModalEvent.evidence.gpsCoords.longitude}° E
                     </div>
                     <div className="text-slate-500">
-                      Accuracy: ±{activeModalEvent.evidence.gpsCoords.accuracyMeters}m · Location: {activeModalEvent.evidence.gpsCoords.locationName}
+                      {t.timeline.accuracyLabel} ±{activeModalEvent.evidence.gpsCoords.accuracyMeters}m · {t.timeline.locationLabel} {activeModalEvent.evidence.gpsCoords.locationName}
                     </div>
                   </div>
                 )}
@@ -1127,10 +1179,10 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
                 {activeModalEvent.evidence.weatherData && (
                   <div className="p-2.5 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px] space-y-1">
                     <div className="font-semibold text-sky-800 dark:text-sky-300">
-                      Station: {activeModalEvent.evidence.weatherData.sourceStation} · Condition: {activeModalEvent.evidence.weatherData.condition}
+                      {t.timeline.stationLabel} {activeModalEvent.evidence.weatherData.sourceStation} · {t.timeline.conditionLabel} {activeModalEvent.evidence.weatherData.condition}
                     </div>
                     <div className="text-slate-500">
-                      Temp: {activeModalEvent.evidence.weatherData.temperatureC}°C · Rainfall: {activeModalEvent.evidence.weatherData.rainfallMm} mm · Humidity: {activeModalEvent.evidence.weatherData.humidityPercent}%
+                      {t.timeline.tempLabel} {activeModalEvent.evidence.weatherData.temperatureC}°C · {t.timeline.rainfallLabel} {activeModalEvent.evidence.weatherData.rainfallMm} mm · {t.timeline.humidityLabel} {activeModalEvent.evidence.weatherData.humidityPercent}%
                     </div>
                   </div>
                 )}
@@ -1139,19 +1191,19 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
                 {activeModalEvent.evidence.productDetails && (
                   <div className="grid grid-cols-2 gap-2 p-2.5 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-700 text-[11px]">
                     <div>
-                      <span className="text-slate-400 block">Product:</span>
+                      <span className="text-slate-400 block">{t.timeline.productLabel}</span>
                       <span className="font-semibold">{activeModalEvent.evidence.productDetails.productName}</span>
                     </div>
                     <div>
-                      <span className="text-slate-400 block">Manufacturer:</span>
+                      <span className="text-slate-400 block">{t.timeline.manufacturerLabel}</span>
                       <span className="font-semibold">{activeModalEvent.evidence.productDetails.manufacturer}</span>
                     </div>
                     <div>
-                      <span className="text-slate-400 block">Active Ingredient:</span>
+                      <span className="text-slate-400 block">{t.timeline.activeIngredientLabel}</span>
                       <span className="font-semibold">{activeModalEvent.evidence.productDetails.activeIngredient}</span>
                     </div>
                     <div>
-                      <span className="text-slate-400 block">Batch / Expiry:</span>
+                      <span className="text-slate-400 block">{t.timeline.batchExpiryLabel}</span>
                       <span className="font-semibold">{activeModalEvent.evidence.productDetails.batchNumber} / {activeModalEvent.evidence.productDetails.expiryDate}</span>
                     </div>
                   </div>
@@ -1176,7 +1228,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
                   {activeModalEvent.correctionHistory.map((item) => (
                     <div key={item.id} className="p-2 bg-white dark:bg-slate-900 rounded border border-amber-100 dark:border-amber-900/60 text-[11px]">
                       <div className="flex justify-between text-slate-500">
-                        <span className="font-semibold capitalize text-slate-700 dark:text-slate-300">Field: {item.field}</span>
+                        <span className="font-semibold capitalize text-slate-700 dark:text-slate-300">{t.timeline.fieldLabel} {item.field}</span>
                         <span>{new Date(item.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                       </div>
                       <div className="mt-0.5">
@@ -1192,12 +1244,15 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
 
             {/* Action buttons */}
             <div className="flex items-center justify-between pt-2">
-              {activeModalEvent.status === 'pending_confirmation' && onConfirmEvent && (
+              {!activeModalEvent.isDemo &&
+                !isEstimatedEvent(activeModalEvent) &&
+                activeModalEvent.status === 'pending_confirmation' &&
+                onConfirmEvent && (
                 <button
                   type="button"
                   onClick={() => {
                     onConfirmEvent(activeModalEvent.eventId);
-                    setActiveModalEvent(null);
+                    setActiveModalEventId(null);
                   }}
                   className="px-4 py-2 bg-emerald-800 hover:bg-emerald-900 text-white font-bold rounded-lg text-xs"
                 >
@@ -1207,7 +1262,7 @@ export const FarmTimeline: React.FC<FarmTimelineProps> = ({
               <div className="ml-auto flex gap-2">
                 <button
                   type="button"
-                  onClick={() => setActiveModalEvent(null)}
+                  onClick={() => setActiveModalEventId(null)}
                   className="px-4 py-2 text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg"
                 >
                   {t.timeline.close}

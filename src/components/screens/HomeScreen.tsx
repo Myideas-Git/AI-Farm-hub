@@ -20,7 +20,8 @@ import {
 import { FarmerProfile, FarmerPreferences } from '../../types/profile';
 import { TrustIndicator } from '../common/TrustIndicator';
 import { NavTab } from '../layout/TopBar';
-import { TRANSLATIONS } from '../../i18n/translations';
+import { getTranslations } from '../../i18n/translations';
+import { calculateFarmSummary } from '../../utils/farmSummary';
 
 interface HomeScreenProps {
   farmer: Farmer;
@@ -49,9 +50,20 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onQuickRecord,
   onOpenProfile,
 }) => {
-  const t = TRANSLATIONS[preferences.appLanguage] || TRANSLATIONS.Telugu;
+  const t = getTranslations(preferences.appLanguage);
   const primaryPlot = plots[0]; // Plot A — Paddy (2 acres)
   const secondaryPlot = plots[1]; // Plot B — Groundnut (3 acres)
+  const getPlotActiveCycle = (plot?: Plot): CropCycle | undefined => {
+    if (!plot) return undefined;
+    return (
+      cropCycles.find((c) => c.id === plot.currentCropCycleId) ||
+      cropCycles.find((c) => c.plotId === plot.id && c.status === 'active') ||
+      cropCycles.find((c) => c.plotId === plot.id)
+    );
+  };
+  const primaryCycle = getPlotActiveCycle(primaryPlot);
+  const secondaryCycle = getPlotActiveCycle(secondaryPlot);
+  const homeSummary = calculateFarmSummary(events);
 
   const getObjectiveLabel = (obj: string): string => {
     switch (obj) {
@@ -184,7 +196,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
               <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">
                 {t.home.fieldStatusTitle}
               </span>
-              <TrustIndicator status="demo" size="sm" />
+              <TrustIndicator status="demo" size="sm" language={preferences.appLanguage} />
             </div>
 
             <div className="space-y-2 mb-2">
@@ -192,20 +204,24 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                 <div className="flex justify-between text-xs">
                   <span className="font-bold text-slate-900 dark:text-white">{primaryPlot?.name}</span>
                   <span className="text-emerald-800 dark:text-emerald-400 font-semibold">
-                    {primaryPlot?.areaAcres} {preferences.appLanguage === 'Telugu' ? 'ఎకరాలు' : preferences.appLanguage === 'Hindi' ? 'एकड़' : 'Acres'}
+                    {primaryPlot?.areaAcres} {t.units.acres}
                   </span>
                 </div>
-                <div className="text-[11px] text-slate-500 mt-0.5">{t.home.cropPaddyLandPrep}</div>
+                <div className="text-[11px] text-slate-500 mt-0.5">
+                  {t.myFarm.cropLabel}: {primaryPlot?.cropName} ({t.cropStages[primaryCycle?.stage || 'unknown']})
+                </div>
               </div>
 
               <div className="p-2 bg-slate-50 dark:bg-slate-800 rounded-lg">
                 <div className="flex justify-between text-xs">
                   <span className="font-bold text-slate-900 dark:text-white">{secondaryPlot?.name}</span>
                   <span className="text-emerald-800 dark:text-emerald-400 font-semibold">
-                    {secondaryPlot?.areaAcres} {preferences.appLanguage === 'Telugu' ? 'ఎకరాలు' : preferences.appLanguage === 'Hindi' ? 'एकड़' : 'Acres'}
+                    {secondaryPlot?.areaAcres} {t.units.acres}
                   </span>
                 </div>
-                <div className="text-[11px] text-slate-500 mt-0.5">{t.home.cropGroundnutLandPrep}</div>
+                <div className="text-[11px] text-slate-500 mt-0.5">
+                  {t.myFarm.cropLabel}: {secondaryPlot?.cropName} ({t.cropStages[secondaryCycle?.stage || 'unknown']})
+                </div>
               </div>
             </div>
           </div>
@@ -316,7 +332,13 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
             onClick={() => onNavigate('record')}
             className="text-xs font-semibold text-emerald-800 dark:text-emerald-400 flex items-center gap-1 min-h-[36px]"
           >
-            <span>{t.home.viewAllRecords} ({events.length})</span>
+            <span>
+              {t.home.viewAllRecords} (
+              {homeSummary.hasRealData
+                ? homeSummary.realTotalEvents
+                : `${homeSummary.demoTotalEvents} ${t.timeline.demoBadge}`}
+              )
+            </span>
             <ArrowRight className="w-3.5 h-3.5" />
           </button>
         </div>
@@ -335,7 +357,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                     <span>{evt.title}</span>
                     {evt.isDemo && (
                       <span className="text-[9px] font-mono text-sky-700 dark:text-sky-400 font-bold">
-                        [DEMO]
+                        [{t.timeline.demoBadge}]
                       </span>
                     )}
                   </div>
